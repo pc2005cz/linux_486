@@ -6507,8 +6507,12 @@ u32 ata_wait_register(struct ata_port *ap, void __iomem *reg, u32 mask, u32 val,
 	deadline = ata_deadline(jiffies, timeout);
 
 	while ((tmp & mask) == val && time_before(jiffies, deadline)) {
+
+//		pr_info("WAIT 0x%08x\n", tmp);	//pc2005
+
 		ata_msleep(ap, interval);
 		tmp = ioread32(reg);
+
 	}
 
 	return tmp;

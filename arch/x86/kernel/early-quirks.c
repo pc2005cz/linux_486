@@ -685,6 +685,166 @@ static void __init apple_airport_reset(int bus, int slot, int func)
 	early_iounmap(mmio, BCM4331_MMIO_SIZE);
 }
 
+
+
+/////////////////////////// pc2005
+/////////////////////////// pc2005
+/////////////////////////// pc2005
+static void __init _bus_reset(u8 b)
+{
+	for (u8 d=0;d<32;d++) {
+		for (u8 f=0;f<8;f++) {
+			u32 dvid;
+			u8 hdr;
+
+			//load DID VID
+			dvid = read_pci_config(b, d, f, 0);
+			if ((dvid == 0x00000000) || (dvid == 0xffffffff)) {
+				//nothing, skip
+				continue;
+			}
+
+			//get header type
+			hdr = read_pci_config_byte(b, d, f, 0xe);
+			if ((hdr & 0x7f) == 1) {
+				//bridge header, do bridge
+
+				//primary bus number
+				write_pci_config_byte(b, d, f, 0x18, 0xff);
+
+				//secondary bus number
+				write_pci_config_byte(b, d, f, 0x19, 0xff);
+
+				//subordinate bus number, set to
+				write_pci_config_byte(b, d, f, 0x1a, 0xff);
+			}
+
+			if (!(hdr & 0x80)) {
+				//not multifunction, skip nonzero rest
+				//expects nonzero multifunction bit 7 == 1
+				break;
+			}
+		}
+	}
+}
+
+
+static u8 __init _bus_depth_set(u8 b, u8 next)
+{
+	if (next >= 250) {
+		pr_info("XPCISCAN bus num overflowed\n");
+		return next;
+	}
+
+	_bus_reset(b);
+
+	for (u8 d=0;d<32;d++) {
+		for (u8 f=0;f<8;f++) {
+			u16 vid, did;
+			u8 hdr;
+
+			//load VID
+			vid = read_pci_config_16(b, d, f, 0);
+			if ((vid == 0x0000) || (vid == 0xffff)) {
+				//nothing, skip
+				continue;
+			}
+
+			//load DID
+			did = read_pci_config_16(b, d, f, 2);
+
+			//get header type
+			hdr = read_pci_config_byte(b, d, f, 0xe);
+			if ((hdr & 0x7f) == 1) {
+				//bridge header, do bridge
+				u8 next_new;
+
+				//primary bus number
+				write_pci_config_byte(b, d, f, 0x18, b);
+
+				//secondary bus number
+				write_pci_config_byte(b, d, f, 0x19, next);
+
+				pr_info("XPCISCAN %04x:%04x %2u:%02u.%1u -> %2u, next:%2u\n",
+					vid, did,
+					b, d, f,
+					next,
+					next+1
+				);
+
+				next_new = _bus_depth_set(next, next + 1);
+
+				//subordinate bus number, set to
+				write_pci_config_byte(b, d, f, 0x1a, next_new - 1);
+
+				next = next_new;
+				// return next_new;
+			}
+
+			if (!(hdr & 0x80)) {
+				//not multifunction, skip nonzero rest
+				//expects nonzero multifunction bit 7 == 1
+				break;
+			}
+		}
+	}
+
+	return next;
+}
+
+
+
+//pc2005
+static void __init my_486_bus_num_rescan(int bus, int slot, int func)
+{
+	u8 max;
+
+	pr_info("!!! 486 bus num rescan (early-quirks.c)\n");
+
+//	pr_info("ISA level 0x%04x\n",
+//		read_pci_config_16(0, 0x5, 0, 0xc4)
+//	);
+
+	max = 1;
+
+	max = _bus_depth_set(0, max);
+
+#if 0
+	pr_info("bef PLX secbus/subord 0x%02x/0x%02x\n",
+		read_pci_config_byte(0, 0x3, 0, 0x19),
+		read_pci_config_byte(0, 0x3, 0, 0x1a)
+	);
+
+	reg = read_pci_config_byte(0, 0x3, 0, 0x19);
+
+	pr_info("bef ASM secbus/subord 0x%02x/0x%02x\n",
+		read_pci_config_byte(reg, 0, 0, 0x19),
+		read_pci_config_byte(reg, 0, 0, 0x1a)
+	);
+
+	//asmedia force subordinate 6
+	write_pci_config_byte(reg, 0, 0, 0x1a, 6);
+
+	pr_info("aft ASM secbus/subord 0x%02x/0x%02x\n",
+		read_pci_config_byte(reg, 0, 0, 0x19),
+		read_pci_config_byte(reg, 0, 0, 0x1a)
+	);
+
+	//force plx
+	write_pci_config_byte(0, 0x3, 0, 0x1a, 6);
+
+	pr_info("aft secbus/subord 0x%02x/0x%02x\n",
+		read_pci_config_byte(0, 0x3, 0, 0x19),
+		read_pci_config_byte(0, 0x3, 0, 0x1a)
+	);
+
+//1b21:1184
+//01:00.0
+#endif
+}
+
+
+
 #define QFLAG_APPLY_ONCE 	0x1
 #define QFLAG_APPLIED		0x2
 #define QFLAG_DONE		(QFLAG_APPLY_ONCE|QFLAG_APPLIED)
@@ -728,6 +888,14 @@ static struct chipset early_qrk[] __initdata = {
 		PCI_CLASS_BRIDGE_HOST, PCI_ANY_ID, 0, force_disable_hpet},
 	{ PCI_VENDOR_ID_BROADCOM, 0x4331,
 	  PCI_CLASS_NETWORK_OTHER, PCI_ANY_ID, 0, apple_airport_reset},
+
+	//pc2005 4dps ultraearly fix subordinate bus?
+	{ PCI_VENDOR_ID_SI, PCI_DEVICE_ID_SI_496,
+	  PCI_CLASS_BRIDGE_HOST, PCI_ANY_ID, 0, my_486_bus_num_rescan},
+
+	{ PCI_VENDOR_ID_AL, PCI_DEVICE_ID_AL_M1489,
+	  PCI_CLASS_BRIDGE_HOST, PCI_ANY_ID, 0, my_486_bus_num_rescan},
+
 	{}
 };
 

@@ -71,6 +71,7 @@ uint32_t r600_dma_get_rptr(struct radeon_device *rdev,
 uint32_t r600_dma_get_wptr(struct radeon_device *rdev,
 			   struct radeon_ring *ring)
 {
+	// asm volatile ("outb %al, $0xed");
 	return (RREG32(DMA_RB_WPTR) & 0x3fffc) >> 2;
 }
 
@@ -85,6 +86,8 @@ uint32_t r600_dma_get_wptr(struct radeon_device *rdev,
 void r600_dma_set_wptr(struct radeon_device *rdev,
 		       struct radeon_ring *ring)
 {
+	// asm volatile ("outb %al, $0xed");
+
 	WREG32(DMA_RB_WPTR, (ring->wptr << 2) & 0x3fffc);
 }
 

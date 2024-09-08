@@ -161,6 +161,9 @@ int radeon_bo_create(struct radeon_device *rdev,
 				       RADEON_GEM_DOMAIN_GTT |
 				       RADEON_GEM_DOMAIN_CPU);
 
+	// pr_info("bo flags %x, size %li\n", flags, size);
+
+
 	bo->flags = flags;
 	/* PCI GART is always snooped */
 	if (!(rdev->flags & RADEON_IS_PCIE))
@@ -198,6 +201,15 @@ int radeon_bo_create(struct radeon_device *rdev,
 	if (!drm_arch_can_wc_memory())
 		bo->flags &= ~RADEON_GEM_GTT_WC;
 #endif
+
+	// pr_info("bo flags bef %x\n", bo->flags);
+
+//uncached on sis496 pc2005
+bo->flags |= RADEON_GEM_GTT_UC;
+
+	// pr_info("bo bef:%x aft:%x size:%li\n", flags, bo->flags, size);	//after WORKS
+
+	// pr_info("bo flags %x, size %li\n", flags, size);
 
 	radeon_ttm_placement_from_domain(bo, domain);
 	/* Kernel allocation are uninterruptible */

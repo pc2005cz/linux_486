@@ -77,16 +77,20 @@ void radeon_driver_unload_kms(struct drm_device *dev)
 	radeon_acpi_fini(rdev);
 
 	radeon_modeset_fini(rdev);
+	pr_info("S1\n");
 	radeon_device_fini(rdev);
+	pr_info("S2\n");
 
 	if (rdev->agp)
 		arch_phys_wc_del(rdev->agp->agp_mtrr);
 	kfree(rdev->agp);
 	rdev->agp = NULL;
+	pr_info("S3\n");
 
 done_free:
 	kfree(rdev);
 	dev->dev_private = NULL;
+	pr_info("S4\n");
 }
 
 /**
@@ -602,6 +606,9 @@ int radeon_info_ioctl(struct drm_device *dev, void *data, struct drm_file *filp)
 			DRM_ERROR("copy_from_user %s:%u\n", __func__, __LINE__);
 			return -EFAULT;
 		}
+
+		pr_info("RGAIR\n");
+
 		if (radeon_get_allowed_info_register(rdev, *value, value))
 			return -EINVAL;
 		break;
@@ -784,6 +791,26 @@ u32 radeon_get_vblank_counter_kms(struct drm_crtc *crtc)
 	u32 count;
 	struct radeon_device *rdev = dev->dev_private;
 
+	// pr_info("Vget %li %li %li\n", in_irq(), in_softirq(), in_interrupt());
+
+	// pr_info("Vget %lx %lx\n", in_irq(), in_softirq());
+
+	//pc2005
+	#define R_0060A4_D1CRTC_STATUS_FRAME_COUNT           0x0060A4
+	#define R_0068A4_D2CRTC_STATUS_FRAME_COUNT           0x0068A4
+
+	// if (pipe == 0) {
+	// 	count = RREG32(R_0060A4_D1CRTC_STATUS_FRAME_COUNT);
+	// } else {
+	// 	count = RREG32(R_0068A4_D2CRTC_STATUS_FRAME_COUNT);
+	// }
+
+	// pr_info("cnt:%u\n", count);
+
+	// return count;
+
+// return radeon_get_vblank_counter(rdev, pipe);
+
 	if (pipe >= rdev->num_crtc) {
 		DRM_ERROR("Invalid crtc %u\n", pipe);
 		return -EINVAL;
@@ -798,6 +825,8 @@ u32 radeon_get_vblank_counter_kms(struct drm_crtc *crtc)
 	 * result by 1 to give the proper appearance to caller.
 	 */
 	if (rdev->mode_info.crtcs[pipe]) {
+		unsigned timeout = 0;
+
 		/* Repeat readout if needed to provide stable result if
 		 * we cross start of vsync during the queries.
 		 */
@@ -811,7 +840,18 @@ u32 radeon_get_vblank_counter_kms(struct drm_crtc *crtc)
 				dev, pipe, GET_DISTANCE_TO_VBLANKSTART,
 				&vpos, &hpos, NULL, NULL,
 				&rdev->mode_info.crtcs[pipe]->base.hwmode);
+
+			timeout++;
+
+#if 0
+			if (timeout > 10000) {
+				pr_info("vblank count timeout!\n");
+				break;
+			}
+#endif
 		} while (count != radeon_get_vblank_counter(rdev, pipe));
+
+		// pr_info("get v break\n");
 
 		if (((stat & (DRM_SCANOUTPOS_VALID | DRM_SCANOUTPOS_ACCURATE)) !=
 		    (DRM_SCANOUTPOS_VALID | DRM_SCANOUTPOS_ACCURATE))) {
@@ -828,12 +868,17 @@ u32 radeon_get_vblank_counter_kms(struct drm_crtc *crtc)
 			if (vpos >= 0)
 				count++;
 		}
+
+		// pr_info("get v FI\n");
+
 	}
 	else {
 	    /* Fallback to use value as is. */
 	    count = radeon_get_vblank_counter(rdev, pipe);
 	    DRM_DEBUG_VBL("NULL mode info! Returned count may be wrong.\n");
 	}
+
+	// pr_info("get v fin\n");
 
 	return count;
 }
@@ -859,10 +904,14 @@ int radeon_enable_vblank_kms(struct drm_crtc *crtc)
 		return -EINVAL;
 	}
 
+	// pr_info("enable_vblank_kms\n");
+	// // return 0;	//pc2005
+
 	spin_lock_irqsave(&rdev->irq.lock, irqflags);
 	rdev->irq.crtc_vblank_int[pipe] = true;
 	r = radeon_irq_set(rdev);
 	spin_unlock_irqrestore(&rdev->irq.lock, irqflags);
+	// pr_info("REVK fin\n");
 	return r;
 }
 
@@ -884,6 +933,8 @@ void radeon_disable_vblank_kms(struct drm_crtc *crtc)
 		DRM_ERROR("Invalid crtc %d\n", pipe);
 		return;
 	}
+
+	// pr_info("disable_vblank_kms\n");
 
 	spin_lock_irqsave(&rdev->irq.lock, irqflags);
 	rdev->irq.crtc_vblank_int[pipe] = false;

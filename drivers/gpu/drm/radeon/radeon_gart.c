@@ -179,6 +179,7 @@ int radeon_gart_table_vram_pin(struct radeon_device *rdev)
 		for (i = 0; i < rdev->gart.num_gpu_pages; i++)
 			radeon_gart_set_page(rdev, i, rdev->gart.pages_entry[i]);
 		mb();
+		// mb();	//NOTICE pc2005 barriers
 		radeon_gart_tlb_flush(rdev);
 	}
 
@@ -266,6 +267,7 @@ void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
 	}
 	if (rdev->gart.ptr) {
 		mb();
+		// mb();	//NOTICE pc2005 barriers
 		radeon_gart_tlb_flush(rdev);
 	}
 }
@@ -315,6 +317,7 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
 	}
 	if (rdev->gart.ptr) {
 		mb();
+		// mb();	//NOTICE pc2005 barriers
 		radeon_gart_tlb_flush(rdev);
 	}
 	return 0;

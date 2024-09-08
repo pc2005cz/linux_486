@@ -5955,6 +5955,79 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x1536, rom_bar_overlap_defect);
 DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x1537, rom_bar_overlap_defect);
 DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x1538, rom_bar_overlap_defect);
 
+
+//pc2005 486
+static void plx_test_bus(struct pci_dev *dev)
+{
+	u32 val;
+	struct resource *r = &dev->resource[0];
+
+	//TODO if on ALI (SIS has a better PCI space)
+
+	pr_info("!!! PEX8111 hide BAR0 s:%08x e:%08x f:%08lx\n", r->start, r->end, r->flags);
+
+	// return;
+
+	//doesn't set in reverse bridge (only eeprom)
+
+	//BAR0 is OK in UMC
+
+	// r->start = 0x05ff0000;
+	// r->end = 0x05ffffff;
+	// r->flags = IORESOURCE_PCI_FIXED;
+
+	//DEVSPECCTL
+	pci_read_config_dword(dev, 0x48, &val);
+	val &= ~(1<<1);
+	pci_write_config_dword(dev, 0x48, val);
+
+	//erase BAR0
+	// pci_write_config_dword(dev, 0x10, 0x05ff0000);
+}
+
+// DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_PLX, 0x8111, plx_test_bus);
+// DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_PLX, 0x8111, plx_test_bus);
+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_PLX, 0x8111, plx_test_bus);
+
+
+#if 0
+#include "ab.h"
+
+//pc2005 radeon_reset_rom_bar
+static void radeon_reset_rom_bar(struct pci_dev *dev)
+{
+	struct resource *r = &dev->resource[PCI_ROM_RESOURCE];
+	u16 val;
+
+	pr_info("!!!!!!! radeon_reset_rom_bar\n");
+
+	pr_info("	%08x %08x %08lx\n", r->start, r->end, r->flags);
+
+	pci_read_config_word(dev, PCI_COMMAND, &val);
+
+	pr_info("	%04hx\n", val);
+
+	r->flags = IORESOURCE_MEM | IORESOURCE_PCI_FIXED | IORESOURCE_ROM_SHADOW;
+	r->start = __pa(atombios2_bin);
+	r->end = __pa(atombios2_bin)+ATOMLEN;
+	r->parent = r->child = r->sibling = NULL;
+
+	dev->rom = __pa(atombios2_bin);
+	dev->romlen = ATOMLEN;
+
+	// r->start = 0;
+	// r->end = 0;
+	// r->flags = IORESOURCE_PCI_FIXED;
+
+	//erase BAR ROM
+	pci_write_config_dword(dev, 0x30, 0x0);
+}
+
+//pc2005 ... disable with coreboot?
+// DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, 0x9540, radeon_reset_rom_bar);
+#endif
+
+
 #ifdef CONFIG_PCIEASPM
 /*
  * Several Intel DG2 graphics devices advertise that they can only tolerate

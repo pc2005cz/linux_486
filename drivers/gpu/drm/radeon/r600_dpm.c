@@ -684,26 +684,54 @@ void r600_wait_for_power_level(struct radeon_device *rdev,
 
 void r600_start_dpm(struct radeon_device *rdev)
 {
+	pr_info("DPM1 start\n");
+
 	r600_enable_sclk_control(rdev, false);
+	pr_info("DPM2\n");
 	r600_enable_mclk_control(rdev, false);
+	pr_info("DPM3\n");
 
 	r600_dynamicpm_enable(rdev, true);
+	pr_info("DPM4 vblank 0\n");
 
 	radeon_wait_for_vblank(rdev, 0);
+	pr_info("DPM5 vblank 1\n");
+
 	radeon_wait_for_vblank(rdev, 1);
+	pr_info("DPM6 after vblank!\n");
 
 	r600_enable_spll_bypass(rdev, true);
+	pr_info("DPM7\n");
+
 	r600_wait_for_spll_change(rdev);
+	pr_info("DPM8\n");
+
 	r600_enable_spll_bypass(rdev, false);
+	pr_info("DPM9\n");
+
 	r600_wait_for_spll_change(rdev);
+	pr_info("DPM10\n");
+
 
 	r600_enable_spll_bypass(rdev, true);
+	pr_info("DPM11\n");
+
 	r600_wait_for_spll_change(rdev);
+	pr_info("DPM12\n");
+
 	r600_enable_spll_bypass(rdev, false);
+	pr_info("DPM13\n");
+
 	r600_wait_for_spll_change(rdev);
+	pr_info("DPM14\n");
+
 
 	r600_enable_sclk_control(rdev, true);
+	pr_info("DPM15\n");
+
 	r600_enable_mclk_control(rdev, true);
+	pr_info("DPM16\n");
+
 }
 
 void r600_stop_dpm(struct radeon_device *rdev)
@@ -794,6 +822,9 @@ int r600_dpm_late_enable(struct radeon_device *rdev)
 		if (ret)
 			return ret;
 		rdev->irq.dpm_thermal = true;
+
+		pr_info("r600_dpm_late_enable\n");
+
 		radeon_irq_set(rdev);
 	}
 

@@ -125,6 +125,30 @@ void math_emulate(struct math_emu_info *info)
 
 	FPU_ORIG_EIP = FPU_EIP;
 
+
+
+#if 0
+	RE_ENTRANT_CHECK_OFF;
+
+	printk(KERN_DEFAULT "{ EFLAGS 0x%08lx SW 0x%04x\n",
+		FPU_EFLAGS,
+		partial_status & 0xffff	//SW
+	);
+	for (unsigned idx=0; idx<8; idx++) {
+		FPU_REG *r = &fpu_register(idx);
+		printk(KERN_DEFAULT "ST%i %01i 0x%04hx %08x %08x\n",
+			idx, FPU_gettag(idx), r->exp, r->sigh, r->sigl
+		);
+	}
+
+	FPU_printall();
+
+	RE_ENTRANT_CHECK_ON;
+#endif
+
+
+
+
 	if ((FPU_EFLAGS & 0x00020000) != 0) {
 		/* Virtual 8086 mode */
 		addr_modes.default_mode = VM86;
@@ -161,7 +185,8 @@ void math_emulate(struct math_emu_info *info)
 			code_limit = 0xffffffff;
 	}
 
-	FPU_lookahead = !(FPU_EFLAGS & X86_EFLAGS_TF);
+	// FPU_lookahead = !(FPU_EFLAGS & X86_EFLAGS_TF);
+	FPU_lookahead = 0;	//pc2005
 
 	if (!valid_prefix(&byte1, (u_char __user **) & FPU_EIP,
 			  &addr_modes.override)) {
@@ -474,9 +499,14 @@ void math_emulate(struct math_emu_info *info)
 		st0_tag = FPU_gettag0();
 		switch (type_table[(int)instr_index]) {
 		case _NONE_:	/* also _REGIc: _REGIn */
+
+// printk(KERN_DEFAULT "_NONE_\n");
+
 			break;
 		case _REG0_:
 			if (!NOT_EMPTY_ST0) {
+// printk(KERN_DEFAULT "_REG0_ st0\n");
+
 				FPU_stack_underflow();
 				goto FPU_instruction_done;
 			}
@@ -484,30 +514,44 @@ void math_emulate(struct math_emu_info *info)
 		case _REGIi:
 			if (!NOT_EMPTY_ST0 || !NOT_EMPTY(FPU_rm)) {
 				FPU_stack_underflow_i(FPU_rm);
+
+// printk(KERN_DEFAULT "_REGIi st0 FPU_rm\n");
+
 				goto FPU_instruction_done;
 			}
 			break;
 		case _REGIp:
 			if (!NOT_EMPTY_ST0 || !NOT_EMPTY(FPU_rm)) {
+// printk(KERN_DEFAULT "_REGIp st0 FPU_rm\n");
+
 				FPU_stack_underflow_pop(FPU_rm);
 				goto FPU_instruction_done;
 			}
 			break;
 		case _REGI_:
 			if (!NOT_EMPTY_ST0 || !NOT_EMPTY(FPU_rm)) {
+
+// printk(KERN_DEFAULT "_REGI_ st0 FPU_rm\n");
+
 				FPU_stack_underflow();
 				goto FPU_instruction_done;
 			}
 			break;
 		case _PUSH_:	/* Only used by the fld st(i) instruction */
+// printk(KERN_DEFAULT "_PUSH_\n");
 			break;
 		case _null_:
+// printk(KERN_DEFAULT "_null_\n");
 			FPU_illegal();
 			goto FPU_instruction_done;
 		default:
+// printk(KERN_DEFAULT "default\n");
 			EXCEPTION(EX_INTERNAL | 0x111);
 			goto FPU_instruction_done;
 		}
+
+		// printk(KERN_DEFAULT "ITABLE\n");
+
 		(*st_instr_table[(int)instr_index]) ();
 
 	      FPU_instruction_done:
@@ -519,8 +563,21 @@ void math_emulate(struct math_emu_info *info)
 
       FPU_fwait_done:
 
-#ifdef DEBUG
+#if 0
+// #ifdef DEBUG
 	RE_ENTRANT_CHECK_OFF;
+
+	printk(KERN_DEFAULT "} EFLAGS 0x%08lx SW 0x%04x\n",
+		FPU_EFLAGS,
+		partial_status & 0xffff	//SW
+	);
+	for (unsigned idx=0; idx<8; idx++) {
+		FPU_REG *r = &fpu_register(idx);
+		printk(KERN_DEFAULT "ST%i %01i 0x%04hx %08x %08x\n",
+			   idx, FPU_gettag(idx), r->exp, r->sigh, r->sigl
+		);
+	}
+
 	FPU_printall();
 	RE_ENTRANT_CHECK_ON;
 #endif /* DEBUG */
@@ -528,12 +585,22 @@ void math_emulate(struct math_emu_info *info)
 	if (FPU_lookahead && !need_resched()) {
 		FPU_ORIG_EIP = FPU_EIP - code_base;
 		if (valid_prefix(&byte1, (u_char __user **) & FPU_EIP,
-				 &addr_modes.override))
+				 &addr_modes.override)) {
+
+			// printk(KERN_DEFAULT "----RE----\n");
+
 			goto do_another_FPU_instruction;
+		}
 	}
 
 	if (addr_modes.default_mode)
 		FPU_EIP -= code_base;
+
+
+#if 0
+	printk(KERN_DEFAULT "FPU_EIP 0x%08lx 0x%08lx\n", FPU_EIP, code_base);
+#endif
+
 
 	RE_ENTRANT_CHECK_OFF;
 }

@@ -1304,7 +1304,11 @@ static int rv770_get_mvdd_pin_configuration(struct radeon_device *rdev)
 
 u8 rv770_get_memory_module_index(struct radeon_device *rdev)
 {
-	return (u8) ((RREG32(BIOS_SCRATCH_4) >> 16) & 0xff);
+	u8 tmp;
+	// asm volatile ("outb %al, $0xed");
+	tmp = (u8) ((RREG32(BIOS_SCRATCH_4) >> 16) & 0xff);
+	// asm volatile ("outb %al, $0xed");
+	return tmp;
 }
 
 static int rv770_get_mvdd_configuration(struct radeon_device *rdev)
@@ -1987,6 +1991,9 @@ int rv770_dpm_late_enable(struct radeon_device *rdev)
 		if (ret)
 			return ret;
 		rdev->irq.dpm_thermal = true;
+
+		// pr_info("dpm_late_enable\n");
+
 		radeon_irq_set(rdev);
 		result = rv770_send_msg_to_smc(rdev, PPSMC_MSG_EnableThermalInterrupt);
 
@@ -2017,6 +2024,9 @@ void rv770_dpm_disable(struct radeon_device *rdev)
 	if (rdev->irq.installed &&
 	    r600_is_internal_thermal_sensor(rdev->pm.int_thermal_type)) {
 		rdev->irq.dpm_thermal = false;
+
+		// pr_info("dpm_disable\n");
+
 		radeon_irq_set(rdev);
 	}
 

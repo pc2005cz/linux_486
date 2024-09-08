@@ -1074,10 +1074,14 @@ u32 r100_gfx_get_rptr(struct radeon_device *rdev,
 {
 	u32 rptr;
 
+	// asm volatile ("outb %al, $0xed");
+
 	if (rdev->wb.enabled)
 		rptr = le32_to_cpu(rdev->wb.wb[ring->rptr_offs/4]);
 	else
 		rptr = RREG32(RADEON_CP_RB_RPTR);
+
+	// asm volatile ("outb %al, $0xed");
 
 	return rptr;
 }
@@ -1085,14 +1089,21 @@ u32 r100_gfx_get_rptr(struct radeon_device *rdev,
 u32 r100_gfx_get_wptr(struct radeon_device *rdev,
 		      struct radeon_ring *ring)
 {
-	return RREG32(RADEON_CP_RB_WPTR);
+	u32 tmp;
+	// asm volatile ("outb %al, $0xed");
+	tmp = RREG32(RADEON_CP_RB_WPTR);
+	// asm volatile ("outb %al, $0xed");
+	return tmp;
 }
 
 void r100_gfx_set_wptr(struct radeon_device *rdev,
 		       struct radeon_ring *ring)
 {
+	// asm volatile ("outb %al, $0xed");
 	WREG32(RADEON_CP_RB_WPTR, ring->wptr);
-	(void)RREG32(RADEON_CP_RB_WPTR);
+	// asm volatile ("outb %al, $0xed");
+	(void)RREG32(RADEON_CP_RB_WPTR);	//commented on ali/sis
+	// asm volatile ("outb %al, $0xed");
 }
 
 static void r100_cp_load_microcode(struct radeon_device *rdev)
@@ -4103,8 +4114,11 @@ uint32_t r100_mm_rreg_slow(struct radeon_device *rdev, uint32_t reg)
 	uint32_t ret;
 
 	spin_lock_irqsave(&rdev->mmio_idx_lock, flags);
+	// asm volatile ("outb %al, $0xed");
 	writel(reg, ((void __iomem *)rdev->rmmio) + RADEON_MM_INDEX);
+	// asm volatile ("outb %al, $0xed");
 	ret = readl(((void __iomem *)rdev->rmmio) + RADEON_MM_DATA);
+	// asm volatile ("outb %al, $0xed");
 	spin_unlock_irqrestore(&rdev->mmio_idx_lock, flags);
 	return ret;
 }
@@ -4114,27 +4128,36 @@ void r100_mm_wreg_slow(struct radeon_device *rdev, uint32_t reg, uint32_t v)
 	unsigned long flags;
 
 	spin_lock_irqsave(&rdev->mmio_idx_lock, flags);
+	// asm volatile ("outb %al, $0xed");
 	writel(reg, ((void __iomem *)rdev->rmmio) + RADEON_MM_INDEX);
+	// asm volatile ("outb %al, $0xed");
 	writel(v, ((void __iomem *)rdev->rmmio) + RADEON_MM_DATA);
+	// asm volatile ("outb %al, $0xed");
 	spin_unlock_irqrestore(&rdev->mmio_idx_lock, flags);
 }
 
 u32 r100_io_rreg(struct radeon_device *rdev, u32 reg)
 {
+	// asm volatile ("outb %al, $0xed");
 	if (reg < rdev->rio_mem_size)
 		return ioread32(rdev->rio_mem + reg);
 	else {
 		iowrite32(reg, rdev->rio_mem + RADEON_MM_INDEX);
+		// asm volatile ("outb %al, $0xed");
 		return ioread32(rdev->rio_mem + RADEON_MM_DATA);
 	}
 }
 
 void r100_io_wreg(struct radeon_device *rdev, u32 reg, u32 v)
 {
+	// asm volatile ("outb %al, $0xed");
+
 	if (reg < rdev->rio_mem_size)
 		iowrite32(v, rdev->rio_mem + reg);
 	else {
 		iowrite32(reg, rdev->rio_mem + RADEON_MM_INDEX);
+		// asm volatile ("outb %al, $0xed");
 		iowrite32(v, rdev->rio_mem + RADEON_MM_DATA);
+		// asm volatile ("outb %al, $0xed");
 	}
 }

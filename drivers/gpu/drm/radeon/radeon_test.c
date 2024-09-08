@@ -87,6 +87,8 @@ static void radeon_do_test_moves(struct radeon_device *rdev, int flag)
 		void **vram_start, **vram_end;
 		struct radeon_fence *fence = NULL;
 
+		pr_info("T1 %i from %i\n", i, n);
+
 		r = radeon_bo_create(rdev, size, PAGE_SIZE, true,
 				     RADEON_GEM_DOMAIN_GTT, 0, NULL, NULL,
 				     gtt_obj + i);
@@ -94,21 +96,25 @@ static void radeon_do_test_moves(struct radeon_device *rdev, int flag)
 			DRM_ERROR("Failed to create GTT object %d\n", i);
 			goto out_lclean;
 		}
+		// pr_info("T2\n");
 
 		r = radeon_bo_reserve(gtt_obj[i], false);
 		if (unlikely(r != 0))
 			goto out_lclean_unref;
+		// pr_info("T3\n");
 		r = radeon_bo_pin(gtt_obj[i], RADEON_GEM_DOMAIN_GTT, &gtt_addr);
 		if (r) {
 			DRM_ERROR("Failed to pin GTT object %d\n", i);
 			goto out_lclean_unres;
 		}
+		// pr_info("T3\n");
 
 		r = radeon_bo_kmap(gtt_obj[i], &gtt_map);
 		if (r) {
 			DRM_ERROR("Failed to map GTT object %d\n", i);
 			goto out_lclean_unpin;
 		}
+		pr_info("T4\n");
 
 		for (gtt_start = gtt_map, gtt_end = gtt_map + size;
 		     gtt_start < gtt_end;
@@ -116,6 +122,7 @@ static void radeon_do_test_moves(struct radeon_device *rdev, int flag)
 			*gtt_start = gtt_start;
 
 		radeon_bo_kunmap(gtt_obj[i]);
+		pr_info("T5\n");
 
 		if (ring == R600_RING_TYPE_DMA_INDEX)
 			fence = radeon_copy_dma(rdev, gtt_addr, vram_addr,
@@ -130,12 +137,14 @@ static void radeon_do_test_moves(struct radeon_device *rdev, int flag)
 			r = PTR_ERR(fence);
 			goto out_lclean_unpin;
 		}
+		pr_info("T6\n");
 
 		r = radeon_fence_wait(fence, false);
 		if (r) {
 			DRM_ERROR("Failed to wait for GTT->VRAM fence %d\n", i);
 			goto out_lclean_unpin;
 		}
+		pr_info("T7\n");
 
 		radeon_fence_unref(&fence);
 
@@ -149,6 +158,13 @@ static void radeon_do_test_moves(struct radeon_device *rdev, int flag)
 		     vram_start = vram_map, vram_end = vram_map + size;
 		     vram_start < vram_end;
 		     gtt_start++, vram_start++) {
+			if ((vram_start == NULL) || (gtt_start == NULL)) {
+				pr_info("T8 %px %px\n", vram_start, gtt_start);
+			}
+			if (*vram_start == NULL) {
+				pr_info("T8* %px\n", *vram_start);
+			}
+
 			if (*vram_start != gtt_start) {
 				DRM_ERROR("Incorrect GTT->VRAM copy %d: Got 0x%p, "
 					  "expected 0x%p (GTT/VRAM offset "
@@ -165,8 +181,10 @@ static void radeon_do_test_moves(struct radeon_device *rdev, int flag)
 			}
 			*vram_start = vram_start;
 		}
+		pr_info("T9\n");
 
 		radeon_bo_kunmap(vram_obj);
+		pr_info("T10\n");
 
 		if (ring == R600_RING_TYPE_DMA_INDEX)
 			fence = radeon_copy_dma(rdev, vram_addr, gtt_addr,
@@ -181,6 +199,8 @@ static void radeon_do_test_moves(struct radeon_device *rdev, int flag)
 			r = PTR_ERR(fence);
 			goto out_lclean_unpin;
 		}
+		pr_info("T11\n");
+		// pr_info("T11a\n");
 
 		r = radeon_fence_wait(fence, false);
 		if (r) {
@@ -188,7 +208,10 @@ static void radeon_do_test_moves(struct radeon_device *rdev, int flag)
 			goto out_lclean_unpin;
 		}
 
+		pr_info("T11b\n");
+
 		radeon_fence_unref(&fence);
+		pr_info("T12\n");
 
 		r = radeon_bo_kmap(gtt_obj[i], &gtt_map);
 		if (r) {
@@ -221,6 +244,7 @@ static void radeon_do_test_moves(struct radeon_device *rdev, int flag)
 		DRM_INFO("Tested GTT->VRAM and VRAM->GTT copy for GTT offset 0x%llx\n",
 			 gtt_addr - rdev->mc.gtt_start);
 		continue;
+		pr_info("T13\n");
 
 out_lclean_unpin:
 		radeon_bo_unpin(gtt_obj[i]);

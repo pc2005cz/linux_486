@@ -181,6 +181,8 @@ static void fcmovCC(void)
 	int regnri = (top + i) & 7;
 	u_char sti_tag = (tag_word >> (regnri * 2)) & 3;
 
+	// printk(KERN_DEFAULT "FCMOV %i %i\n", regnri, sti_tag);
+
 	if (sti_tag == TAG_Empty) {
 		FPU_stack_underflow();
 		clear_C1();

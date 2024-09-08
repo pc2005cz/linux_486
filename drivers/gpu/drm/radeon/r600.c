@@ -805,6 +805,8 @@ bool r600_hpd_sense(struct radeon_device *rdev, enum radeon_hpd_id hpd)
 {
 	bool connected = false;
 
+	// asm volatile ("outb %al, $0xed");
+
 	if (ASIC_IS_DCE3(rdev)) {
 		switch (hpd) {
 		case RADEON_HPD_1:
@@ -853,6 +855,9 @@ bool r600_hpd_sense(struct radeon_device *rdev, enum radeon_hpd_id hpd)
 			break;
 		}
 	}
+
+	// asm volatile ("outb %al, $0xed");
+
 	return connected;
 }
 
@@ -861,11 +866,17 @@ void r600_hpd_set_polarity(struct radeon_device *rdev,
 {
 	u32 tmp;
 	bool connected = r600_hpd_sense(rdev, hpd);
+	// asm volatile ("outb %al, $0xed");
 
 	if (ASIC_IS_DCE3(rdev)) {
+		pr_info("DDCCEE33\n");
+
 		switch (hpd) {
 		case RADEON_HPD_1:
 			tmp = RREG32(DC_HPD1_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			if (connected)
 				tmp &= ~DC_HPDx_INT_POLARITY;
 			else
@@ -874,6 +885,9 @@ void r600_hpd_set_polarity(struct radeon_device *rdev,
 			break;
 		case RADEON_HPD_2:
 			tmp = RREG32(DC_HPD2_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			if (connected)
 				tmp &= ~DC_HPDx_INT_POLARITY;
 			else
@@ -882,6 +896,9 @@ void r600_hpd_set_polarity(struct radeon_device *rdev,
 			break;
 		case RADEON_HPD_3:
 			tmp = RREG32(DC_HPD3_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			if (connected)
 				tmp &= ~DC_HPDx_INT_POLARITY;
 			else
@@ -890,6 +907,9 @@ void r600_hpd_set_polarity(struct radeon_device *rdev,
 			break;
 		case RADEON_HPD_4:
 			tmp = RREG32(DC_HPD4_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			if (connected)
 				tmp &= ~DC_HPDx_INT_POLARITY;
 			else
@@ -898,6 +918,9 @@ void r600_hpd_set_polarity(struct radeon_device *rdev,
 			break;
 		case RADEON_HPD_5:
 			tmp = RREG32(DC_HPD5_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			if (connected)
 				tmp &= ~DC_HPDx_INT_POLARITY;
 			else
@@ -907,6 +930,9 @@ void r600_hpd_set_polarity(struct radeon_device *rdev,
 			/* DCE 3.2 */
 		case RADEON_HPD_6:
 			tmp = RREG32(DC_HPD6_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			if (connected)
 				tmp &= ~DC_HPDx_INT_POLARITY;
 			else
@@ -920,6 +946,9 @@ void r600_hpd_set_polarity(struct radeon_device *rdev,
 		switch (hpd) {
 		case RADEON_HPD_1:
 			tmp = RREG32(DC_HOT_PLUG_DETECT1_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			if (connected)
 				tmp &= ~DC_HOT_PLUG_DETECTx_INT_POLARITY;
 			else
@@ -928,6 +957,7 @@ void r600_hpd_set_polarity(struct radeon_device *rdev,
 			break;
 		case RADEON_HPD_2:
 			tmp = RREG32(DC_HOT_PLUG_DETECT2_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
 			if (connected)
 				tmp &= ~DC_HOT_PLUG_DETECTx_INT_POLARITY;
 			else
@@ -936,6 +966,7 @@ void r600_hpd_set_polarity(struct radeon_device *rdev,
 			break;
 		case RADEON_HPD_3:
 			tmp = RREG32(DC_HOT_PLUG_DETECT3_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
 			if (connected)
 				tmp &= ~DC_HOT_PLUG_DETECTx_INT_POLARITY;
 			else
@@ -946,6 +977,9 @@ void r600_hpd_set_polarity(struct radeon_device *rdev,
 			break;
 		}
 	}
+
+	// asm volatile ("outb %al, $0xed");
+
 }
 
 void r600_hpd_init(struct radeon_device *rdev)
@@ -1928,6 +1962,9 @@ bool r600_gfx_is_lockup(struct radeon_device *rdev, struct radeon_ring *ring)
 		radeon_ring_lockup_update(rdev, ring);
 		return false;
 	}
+
+	pr_info("L5\n");
+
 	return radeon_ring_test_lockup(rdev, ring);
 }
 
@@ -2398,9 +2435,13 @@ u32 r600_pciep_rreg(struct radeon_device *rdev, u32 reg)
 	u32 r;
 
 	spin_lock_irqsave(&rdev->pciep_idx_lock, flags);
+// asm volatile ("outb %al, $0xed");
 	WREG32(PCIE_PORT_INDEX, ((reg) & 0xff));
-	(void)RREG32(PCIE_PORT_INDEX);
+// asm volatile ("outb %al, $0xed");
+	(void)RREG32(PCIE_PORT_INDEX);	//commented on ali/sis
+// asm volatile ("outb %al, $0xed");
 	r = RREG32(PCIE_PORT_DATA);
+// asm volatile ("outb %al, $0xed");
 	spin_unlock_irqrestore(&rdev->pciep_idx_lock, flags);
 	return r;
 }
@@ -2410,10 +2451,15 @@ void r600_pciep_wreg(struct radeon_device *rdev, u32 reg, u32 v)
 	unsigned long flags;
 
 	spin_lock_irqsave(&rdev->pciep_idx_lock, flags);
+// asm volatile ("outb %al, $0xed");
 	WREG32(PCIE_PORT_INDEX, ((reg) & 0xff));
-	(void)RREG32(PCIE_PORT_INDEX);
+// asm volatile ("outb %al, $0xed");
+	(void)RREG32(PCIE_PORT_INDEX);	//commented on ali/sis
+// asm volatile ("outb %al, $0xed");
 	WREG32(PCIE_PORT_DATA, (v));
-	(void)RREG32(PCIE_PORT_DATA);
+// asm volatile ("outb %al, $0xed");
+	(void)RREG32(PCIE_PORT_DATA);	//commented on ali/sis
+// asm volatile ("outb %al, $0xed");
 	spin_unlock_irqrestore(&rdev->pciep_idx_lock, flags);
 }
 
@@ -2631,14 +2677,23 @@ u32 r600_gfx_get_rptr(struct radeon_device *rdev,
 u32 r600_gfx_get_wptr(struct radeon_device *rdev,
 		      struct radeon_ring *ring)
 {
-	return RREG32(R600_CP_RB_WPTR);
+	u32 tmp;
+
+	// asm volatile ("outb %al, $0xed");
+	tmp = RREG32(R600_CP_RB_WPTR);
+	// asm volatile ("outb %al, $0xed");
+
+	return tmp;
 }
 
 void r600_gfx_set_wptr(struct radeon_device *rdev,
 		       struct radeon_ring *ring)
 {
+// asm volatile ("outb %al, $0xed");
 	WREG32(R600_CP_RB_WPTR, ring->wptr);
-	(void)RREG32(R600_CP_RB_WPTR);
+// asm volatile ("outb %al, $0xed");
+	(void)RREG32(R600_CP_RB_WPTR);	//commented on ali/sis
+// asm volatile ("outb %al, $0xed");
 }
 
 static int r600_cp_load_microcode(struct radeon_device *rdev)
@@ -2742,7 +2797,13 @@ int r600_cp_resume(struct radeon_device *rdev)
 	WREG32(CP_RB_CNTL, tmp | RB_RPTR_WR_ENA);
 	WREG32(CP_RB_RPTR_WR, 0);
 	ring->wptr = 0;
+
+	pr_info("resume before\n");
+	// asm volatile ("outb %al, $0xed");
 	WREG32(CP_RB_WPTR, ring->wptr);
+	// asm volatile ("outb %al, $0xed");
+
+	// pr_info("resume after\n");
 
 	/* set the wb address whether it's enabled or not */
 	WREG32(CP_RB_RPTR_ADDR,
@@ -2789,11 +2850,13 @@ void r600_ring_init(struct radeon_device *rdev, struct radeon_ring *ring, unsign
 	ring->align_mask = 16 - 1;
 
 	if (radeon_ring_supports_scratch_reg(rdev, ring)) {
+// asm volatile ("outb %al, $0xed");
 		r = radeon_scratch_get(rdev, &ring->rptr_save_reg);
 		if (r) {
 			DRM_ERROR("failed to get scratch reg for rptr save (%d).\n", r);
 			ring->rptr_save_reg = 0;
 		}
+// asm volatile ("outb %al, $0xed");
 	}
 }
 
@@ -2827,28 +2890,53 @@ int r600_ring_test(struct radeon_device *rdev, struct radeon_ring *ring)
 	unsigned i;
 	int r;
 
+	// pr_info("TT ring_test\n");
+
 	r = radeon_scratch_get(rdev, &scratch);
 	if (r) {
 		DRM_ERROR("radeon: cp failed to get scratch reg (%d).\n", r);
 		return r;
 	}
+
+	pr_info("!!!!!!! ring_test 0xCAFEDEAD\n");
+
+	//double pc2005 also mb rmb vsude
+
+// asm volatile ("outb %al, $0xed");
 	WREG32(scratch, 0xCAFEDEAD);
+// asm volatile ("outb %al, $0xed");
+
+	pr_info("TT3\n");
+
 	r = radeon_ring_lock(rdev, ring, 3);
 	if (r) {
 		DRM_ERROR("radeon: cp failed to lock ring %d (%d).\n", ring->idx, r);
 		radeon_scratch_free(rdev, scratch);
 		return r;
 	}
+
+	pr_info("TT4\n");
+
 	radeon_ring_write(ring, PACKET3(PACKET3_SET_CONFIG_REG, 1));
+	pr_info("TT5\n");
+
 	radeon_ring_write(ring, ((scratch - PACKET3_SET_CONFIG_REG_OFFSET) >> 2));
+	pr_info("TT6\n");
 	radeon_ring_write(ring, 0xDEADBEEF);
+	pr_info("TT7\n");
 	radeon_ring_unlock_commit(rdev, ring, false);
+	pr_info("TT7a\n");
 	for (i = 0; i < rdev->usec_timeout; i++) {
+		// pr_info("TT7b\n");
+// asm volatile ("outb %al, $0xed");
 		tmp = RREG32(scratch);
+// asm volatile ("outb %al, $0xed");
+
 		if (tmp == 0xDEADBEEF)
 			break;
 		udelay(1);
 	}
+	pr_info("TT8\n");
 	if (i < rdev->usec_timeout) {
 		DRM_INFO("ring test on %d succeeded in %d usecs\n", ring->idx, i);
 	} else {
@@ -2856,7 +2944,9 @@ int r600_ring_test(struct radeon_device *rdev, struct radeon_ring *ring)
 			  ring->idx, scratch, tmp);
 		r = -EINVAL;
 	}
+	pr_info("TT9\n");
 	radeon_scratch_free(rdev, scratch);
+	pr_info("TTfin ring_test! %i\n", r);
 	return r;
 }
 
@@ -2871,6 +2961,7 @@ void r600_fence_ring_emit(struct radeon_device *rdev,
 	u32 cp_coher_cntl = PACKET3_TC_ACTION_ENA | PACKET3_VC_ACTION_ENA |
 		PACKET3_SH_ACTION_ENA;
 
+		//pc2005
 	if (rdev->family >= CHIP_RV770)
 		cp_coher_cntl |= PACKET3_FULL_CACHE_ENA;
 
@@ -3149,6 +3240,9 @@ static int r600_startup(struct radeon_device *rdev)
 			return r;
 	}
 
+	//this function is not called
+	//use rv770
+
 	r = r600_irq_init(rdev);
 	if (r) {
 		DRM_ERROR("radeon: IH init failed (%d).\n", r);
@@ -3335,26 +3429,44 @@ int r600_init(struct radeon_device *rdev)
 	return 0;
 }
 
+//radeon_fini
 void r600_fini(struct radeon_device *rdev)
 {
+	pr_info("Z1\n");
+
 	radeon_pm_fini(rdev);
+	pr_info("Z2\n");
 	radeon_audio_fini(rdev);
+	pr_info("Z3\n");
 	r600_cp_fini(rdev);
+	pr_info("Z4\n");
 	r600_irq_fini(rdev);
+	pr_info("Z5\n");
 	if (rdev->has_uvd) {
 		uvd_v1_0_fini(rdev);
 		radeon_uvd_fini(rdev);
 	}
+	pr_info("Z6\n");
 	radeon_wb_fini(rdev);
+	pr_info("Z7\n");
 	radeon_ib_pool_fini(rdev);
+	pr_info("Z8\n");
 	radeon_irq_kms_fini(rdev);
+	pr_info("Z9\n");
 	r600_pcie_gart_fini(rdev);
+	pr_info("Z10\n");
 	r600_vram_scratch_fini(rdev);
+	pr_info("Z11\n");
 	radeon_agp_fini(rdev);
+	pr_info("Z12\n");
 	radeon_gem_fini(rdev);
+	pr_info("Z13\n");
 	radeon_fence_driver_fini(rdev);
+	pr_info("Z14\n");
 	radeon_bo_fini(rdev);
+	pr_info("Z15\n");
 	radeon_atombios_fini(rdev);
+	pr_info("Z16\n");
 	kfree(rdev->bios);
 	rdev->bios = NULL;
 }
@@ -3406,7 +3518,11 @@ int r600_ib_test(struct radeon_device *rdev, struct radeon_ring *ring)
 		DRM_ERROR("radeon: failed to get scratch reg (%d).\n", r);
 		return r;
 	}
+
+// asm volatile ("outb %al, $0xed");
 	WREG32(scratch, 0xCAFEDEAD);
+// asm volatile ("outb %al, $0xed");
+
 	r = radeon_ib_get(rdev, ring->idx, &ib, NULL, 256);
 	if (r) {
 		DRM_ERROR("radeon: failed to get ib (%d).\n", r);
@@ -3433,7 +3549,9 @@ int r600_ib_test(struct radeon_device *rdev, struct radeon_ring *ring)
 	}
 	r = 0;
 	for (i = 0; i < rdev->usec_timeout; i++) {
+// asm volatile ("outb %al, $0xed");
 		tmp = RREG32(scratch);
+// asm volatile ("outb %al, $0xed");
 		if (tmp == 0xDEADBEEF)
 			break;
 		udelay(1);
@@ -3591,18 +3709,34 @@ static void r600_enable_interrupts(struct radeon_device *rdev)
 {
 	u32 ih_cntl = RREG32(IH_CNTL);
 	u32 ih_rb_cntl = RREG32(IH_RB_CNTL);
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
 
 	ih_cntl |= ENABLE_INTR;
 	ih_rb_cntl |= IH_RB_ENABLE;
 	WREG32(IH_CNTL, ih_cntl);
 	WREG32(IH_RB_CNTL, ih_rb_cntl);
 	rdev->ih.enabled = true;
+
+	// enable_irq(rdev->pdev->irq);
+
+	// pr_info("ENABLE IRQ\n");
+
 }
 
 void r600_disable_interrupts(struct radeon_device *rdev)
 {
 	u32 ih_rb_cntl = RREG32(IH_RB_CNTL);
 	u32 ih_cntl = RREG32(IH_CNTL);
+
+	// pr_info("DISABLE IRQ\n");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+
+	// disable_irq(rdev->pdev->irq);
 
 	ih_rb_cntl &= ~IH_RB_ENABLE;
 	ih_cntl &= ~ENABLE_INTR;
@@ -3620,52 +3754,133 @@ static void r600_disable_interrupt_state(struct radeon_device *rdev)
 	u32 tmp;
 
 	WREG32(CP_INT_CNTL, CNTX_BUSY_INT_ENABLE | CNTX_EMPTY_INT_ENABLE);
+	// asm volatile ("outb %al, $0xed");
 	tmp = RREG32(DMA_CNTL) & ~TRAP_ENABLE;
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
 	WREG32(DMA_CNTL, tmp);
+	// asm volatile ("outb %al, $0xed");
 	WREG32(GRBM_INT_CNTL, 0);
 	WREG32(DxMODE_INT_MASK, 0);
 	WREG32(D1GRPH_INTERRUPT_CONTROL, 0);
 	WREG32(D2GRPH_INTERRUPT_CONTROL, 0);
 	if (ASIC_IS_DCE3(rdev)) {
+		// asm volatile ("outb %al, $0xed");
 		WREG32(DCE3_DACA_AUTODETECT_INT_CONTROL, 0);
+		// asm volatile ("outb %al, $0xed");
 		WREG32(DCE3_DACB_AUTODETECT_INT_CONTROL, 0);
+		// asm volatile ("outb %al, $0xed");
 		tmp = RREG32(DC_HPD1_INT_CONTROL) & DC_HPDx_INT_POLARITY;
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		WREG32(DC_HPD1_INT_CONTROL, tmp);
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		tmp = RREG32(DC_HPD2_INT_CONTROL) & DC_HPDx_INT_POLARITY;
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		WREG32(DC_HPD2_INT_CONTROL, tmp);
+		// asm volatile ("outb %al, $0xed");
 		tmp = RREG32(DC_HPD3_INT_CONTROL) & DC_HPDx_INT_POLARITY;
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		WREG32(DC_HPD3_INT_CONTROL, tmp);
+		// asm volatile ("outb %al, $0xed");
 		tmp = RREG32(DC_HPD4_INT_CONTROL) & DC_HPDx_INT_POLARITY;
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		WREG32(DC_HPD4_INT_CONTROL, tmp);
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		if (ASIC_IS_DCE32(rdev)) {
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			tmp = RREG32(DC_HPD5_INT_CONTROL) & DC_HPDx_INT_POLARITY;
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			WREG32(DC_HPD5_INT_CONTROL, tmp);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			tmp = RREG32(DC_HPD6_INT_CONTROL) & DC_HPDx_INT_POLARITY;
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			WREG32(DC_HPD6_INT_CONTROL, tmp);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			tmp = RREG32(AFMT_AUDIO_PACKET_CONTROL + DCE3_HDMI_OFFSET0) & ~HDMI0_AZ_FORMAT_WTRIG_MASK;
+			// asm volatile ("outb %al, $0xed");
 			WREG32(AFMT_AUDIO_PACKET_CONTROL + DCE3_HDMI_OFFSET0, tmp);
+			// asm volatile ("outb %al, $0xed");
 			tmp = RREG32(AFMT_AUDIO_PACKET_CONTROL + DCE3_HDMI_OFFSET1) & ~HDMI0_AZ_FORMAT_WTRIG_MASK;
+			// asm volatile ("outb %al, $0xed");
 			WREG32(AFMT_AUDIO_PACKET_CONTROL + DCE3_HDMI_OFFSET1, tmp);
+			// asm volatile ("outb %al, $0xed");
 		} else {
+			// asm volatile ("outb %al, $0xed");
 			tmp = RREG32(HDMI0_AUDIO_PACKET_CONTROL) & ~HDMI0_AZ_FORMAT_WTRIG_MASK;
+			// asm volatile ("outb %al, $0xed");
 			WREG32(HDMI0_AUDIO_PACKET_CONTROL, tmp);
+			// asm volatile ("outb %al, $0xed");
 			tmp = RREG32(DCE3_HDMI1_AUDIO_PACKET_CONTROL) & ~HDMI0_AZ_FORMAT_WTRIG_MASK;
+			// asm volatile ("outb %al, $0xed");
 			WREG32(DCE3_HDMI1_AUDIO_PACKET_CONTROL, tmp);
+			// asm volatile ("outb %al, $0xed");
 		}
 	} else {
+		// asm volatile ("outb %al, $0xed");
 		WREG32(DACA_AUTODETECT_INT_CONTROL, 0);
+		// asm volatile ("outb %al, $0xed");
 		WREG32(DACB_AUTODETECT_INT_CONTROL, 0);
+		// asm volatile ("outb %al, $0xed");
 		tmp = RREG32(DC_HOT_PLUG_DETECT1_INT_CONTROL) & DC_HOT_PLUG_DETECTx_INT_POLARITY;
+		// asm volatile ("outb %al, $0xed");
 		WREG32(DC_HOT_PLUG_DETECT1_INT_CONTROL, tmp);
+		// asm volatile ("outb %al, $0xed");
 		tmp = RREG32(DC_HOT_PLUG_DETECT2_INT_CONTROL) & DC_HOT_PLUG_DETECTx_INT_POLARITY;
+		// asm volatile ("outb %al, $0xed");
 		WREG32(DC_HOT_PLUG_DETECT2_INT_CONTROL, tmp);
+		// asm volatile ("outb %al, $0xed");
 		tmp = RREG32(DC_HOT_PLUG_DETECT3_INT_CONTROL) & DC_HOT_PLUG_DETECTx_INT_POLARITY;
+		// asm volatile ("outb %al, $0xed");
 		WREG32(DC_HOT_PLUG_DETECT3_INT_CONTROL, tmp);
+		// asm volatile ("outb %al, $0xed");
 		tmp = RREG32(HDMI0_AUDIO_PACKET_CONTROL) & ~HDMI0_AZ_FORMAT_WTRIG_MASK;
+		// asm volatile ("outb %al, $0xed");
 		WREG32(HDMI0_AUDIO_PACKET_CONTROL, tmp);
+		// asm volatile ("outb %al, $0xed");
 		tmp = RREG32(HDMI1_AUDIO_PACKET_CONTROL) & ~HDMI0_AZ_FORMAT_WTRIG_MASK;
+		// asm volatile ("outb %al, $0xed");
 		WREG32(HDMI1_AUDIO_PACKET_CONTROL, tmp);
+		// asm volatile ("outb %al, $0xed");
 	}
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
 }
 
 int r600_irq_init(struct radeon_device *rdev)
@@ -3740,6 +3955,8 @@ int r600_irq_init(struct radeon_device *rdev)
 	/* at this point everything should be setup correctly to enable master */
 	pci_set_master(rdev->pdev);
 
+	//pc2005 master generates traffic!!!
+
 	/* enable irqs */
 	r600_enable_interrupts(rdev);
 
@@ -3768,33 +3985,100 @@ int r600_irq_set(struct radeon_device *rdev)
 	u32 dma_cntl;
 	u32 thermal_int = 0;
 
+	// volatile u32 my_tmp;
+
+	// pr_info("II1 irq set\n");//after WORKS
+
 	if (!rdev->irq.installed) {
 		WARN(1, "Can't enable IRQ/MSI because no handler is installed\n");
 		return -EINVAL;
 	}
+	// pr_info("II2\n");
 	/* don't enable anything if the ih is disabled */
 	if (!rdev->ih.enabled) {
+		pr_info("II3 not enabled\n");
+
 		r600_disable_interrupts(rdev);
 		/* force the active interrupt state to all disabled */
 		r600_disable_interrupt_state(rdev);
 		return 0;
 	}
+	// pr_info("II3\n");
 
+	// hpd1 = 0;
+	// hpd2 = 0;
+	// hpd3 = 0;
+	// hpd4 = 0;
+	// hpd5 = 0;
+	// hpd6 = 0;
+	// hdmi0 = 0;
+	// hdmi1 = 0;
+
+	#if 1
 	if (ASIC_IS_DCE3(rdev)) {
+		//hits there .. pc2005
+		// pr_info("A\n");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		hpd1 = RREG32(DC_HPD1_INT_CONTROL) & ~DC_HPDx_INT_EN;
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+
+		// pr_info("B\n");
+
 		hpd2 = RREG32(DC_HPD2_INT_CONTROL) & ~DC_HPDx_INT_EN;
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// pr_info("C\n");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		hpd3 = RREG32(DC_HPD3_INT_CONTROL) & ~DC_HPDx_INT_EN;
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// pr_info("D\n");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		hpd4 = RREG32(DC_HPD4_INT_CONTROL) & ~DC_HPDx_INT_EN;
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// pr_info("E\n");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		if (ASIC_IS_DCE32(rdev)) {
+			// pr_info("Exxx\n");
 			hpd5 = RREG32(DC_HPD5_INT_CONTROL) & ~DC_HPDx_INT_EN;
+			// asm volatile ("outb %al, $0xed");
+			// pr_info("F\n");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			hpd6 = RREG32(DC_HPD6_INT_CONTROL) & ~DC_HPDx_INT_EN;
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// pr_info("G\n");
+			// asm volatile ("outb %al, $0xed");
 			hdmi0 = RREG32(AFMT_AUDIO_PACKET_CONTROL + DCE3_HDMI_OFFSET0) & ~AFMT_AZ_FORMAT_WTRIG_MASK;
+			// asm volatile ("outb %al, $0xed");
+			// pr_info("H\n");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			hdmi1 = RREG32(AFMT_AUDIO_PACKET_CONTROL + DCE3_HDMI_OFFSET1) & ~AFMT_AZ_FORMAT_WTRIG_MASK;
 		} else {
 			hdmi0 = RREG32(HDMI0_AUDIO_PACKET_CONTROL) & ~HDMI0_AZ_FORMAT_WTRIG_MASK;
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			hdmi1 = RREG32(DCE3_HDMI1_AUDIO_PACKET_CONTROL) & ~HDMI0_AZ_FORMAT_WTRIG_MASK;
 		}
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+
 	} else {
+		// pr_info("II5\n");
+
 		hpd1 = RREG32(DC_HOT_PLUG_DETECT1_INT_CONTROL) & ~DC_HPDx_INT_EN;
 		hpd2 = RREG32(DC_HOT_PLUG_DETECT2_INT_CONTROL) & ~DC_HPDx_INT_EN;
 		hpd3 = RREG32(DC_HOT_PLUG_DETECT3_INT_CONTROL) & ~DC_HPDx_INT_EN;
@@ -3802,7 +4086,25 @@ int r600_irq_set(struct radeon_device *rdev)
 		hdmi1 = RREG32(HDMI1_AUDIO_PACKET_CONTROL) & ~HDMI0_AZ_FORMAT_WTRIG_MASK;
 	}
 
+#endif
+	// pr_info("II6\n");
+
+	// pr_info("IIIT\n");
+
+	// for (unsigned c=0;c<100;c++) {
+	// 	// asm volatile ("outb %al, $0xed");
+	// }
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+
 	dma_cntl = RREG32(DMA_CNTL) & ~TRAP_ENABLE;
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+
+	// pr_info("IIIT2\n");
 
 	if ((rdev->family > CHIP_R600) && (rdev->family < CHIP_RV770)) {
 		thermal_int = RREG32(CG_THERMAL_INT) &
@@ -3837,6 +4139,9 @@ int r600_irq_set(struct radeon_device *rdev)
 		DRM_DEBUG("r600_irq_set: vblank 1\n");
 		mode_int |= D2MODE_VBLANK_INT_MASK;
 	}
+
+	// pr_info("II12\n");
+
 	if (rdev->irq.hpd[0]) {
 		DRM_DEBUG("r600_irq_set: hpd 1\n");
 		hpd1 |= DC_HPDx_INT_EN;
@@ -3870,6 +4175,8 @@ int r600_irq_set(struct radeon_device *rdev)
 		hdmi1 |= HDMI0_AZ_FORMAT_WTRIG_MASK;
 	}
 
+	// pr_info("II13\n");
+
 	WREG32(CP_INT_CNTL, cp_int_cntl);
 	WREG32(DMA_CNTL, dma_cntl);
 	WREG32(DxMODE_INT_MASK, mode_int);
@@ -3877,19 +4184,52 @@ int r600_irq_set(struct radeon_device *rdev)
 	WREG32(D2GRPH_INTERRUPT_CONTROL, DxGRPH_PFLIP_INT_MASK);
 	WREG32(GRBM_INT_CNTL, grbm_int_cntl);
 	if (ASIC_IS_DCE3(rdev)) {
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+
 		WREG32(DC_HPD1_INT_CONTROL, hpd1);
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		WREG32(DC_HPD2_INT_CONTROL, hpd2);
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		WREG32(DC_HPD3_INT_CONTROL, hpd3);
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		WREG32(DC_HPD4_INT_CONTROL, hpd4);
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		if (ASIC_IS_DCE32(rdev)) {
 			WREG32(DC_HPD5_INT_CONTROL, hpd5);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			WREG32(DC_HPD6_INT_CONTROL, hpd6);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			WREG32(AFMT_AUDIO_PACKET_CONTROL + DCE3_HDMI_OFFSET0, hdmi0);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			WREG32(AFMT_AUDIO_PACKET_CONTROL + DCE3_HDMI_OFFSET1, hdmi1);
 		} else {
 			WREG32(HDMI0_AUDIO_PACKET_CONTROL, hdmi0);
 			WREG32(DCE3_HDMI1_AUDIO_PACKET_CONTROL, hdmi1);
 		}
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 	} else {
 		WREG32(DC_HOT_PLUG_DETECT1_INT_CONTROL, hpd1);
 		WREG32(DC_HOT_PLUG_DETECT2_INT_CONTROL, hpd2);
@@ -3897,14 +4237,32 @@ int r600_irq_set(struct radeon_device *rdev)
 		WREG32(HDMI0_AUDIO_PACKET_CONTROL, hdmi0);
 		WREG32(HDMI1_AUDIO_PACKET_CONTROL, hdmi1);
 	}
+
+	// pr_info("II14\n");
+
 	if ((rdev->family > CHIP_R600) && (rdev->family < CHIP_RV770)) {
 		WREG32(CG_THERMAL_INT, thermal_int);
 	} else if (rdev->family >= CHIP_RV770) {
 		WREG32(RV770_CG_THERMAL_INT, thermal_int);
 	}
 
+	// pr_info("II15\n");
+
+	//double pc2005 also mb rmb vsude
+
+	// asm volatile ("nop"::);
 	/* posting read */
+	// my_tmp =
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+
 	RREG32(R_000E50_SRBM_STATUS);
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+
+	// asm volatile ("nop"::);
+
+	// pr_info("II16 FIN %08x\n", my_tmp);
 
 	return 0;
 }
@@ -3947,82 +4305,170 @@ static void r600_irq_ack(struct radeon_device *rdev)
 	if (rdev->irq.stat_regs.r600.disp_int & LB_D2_VLINE_INTERRUPT)
 		WREG32(D2MODE_VLINE_STATUS, DxMODE_VLINE_ACK);
 	if (rdev->irq.stat_regs.r600.disp_int & DC_HPD1_INTERRUPT) {
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		if (ASIC_IS_DCE3(rdev)) {
 			tmp = RREG32(DC_HPD1_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+
 			tmp |= DC_HPDx_INT_ACK;
 			WREG32(DC_HPD1_INT_CONTROL, tmp);
 		} else {
 			tmp = RREG32(DC_HOT_PLUG_DETECT1_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			tmp |= DC_HPDx_INT_ACK;
 			WREG32(DC_HOT_PLUG_DETECT1_INT_CONTROL, tmp);
 		}
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 	}
 	if (rdev->irq.stat_regs.r600.disp_int & DC_HPD2_INTERRUPT) {
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		if (ASIC_IS_DCE3(rdev)) {
 			tmp = RREG32(DC_HPD2_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			tmp |= DC_HPDx_INT_ACK;
 			WREG32(DC_HPD2_INT_CONTROL, tmp);
 		} else {
 			tmp = RREG32(DC_HOT_PLUG_DETECT2_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			tmp |= DC_HPDx_INT_ACK;
 			WREG32(DC_HOT_PLUG_DETECT2_INT_CONTROL, tmp);
 		}
+		// asm volatile ("outb %al, $0xed");
 	}
 	if (rdev->irq.stat_regs.r600.disp_int_cont & DC_HPD3_INTERRUPT) {
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		if (ASIC_IS_DCE3(rdev)) {
 			tmp = RREG32(DC_HPD3_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			tmp |= DC_HPDx_INT_ACK;
 			WREG32(DC_HPD3_INT_CONTROL, tmp);
 		} else {
 			tmp = RREG32(DC_HOT_PLUG_DETECT3_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			tmp |= DC_HPDx_INT_ACK;
 			WREG32(DC_HOT_PLUG_DETECT3_INT_CONTROL, tmp);
 		}
+		// asm volatile ("outb %al, $0xed");
 	}
+	// asm volatile ("outb %al, $0xed");
 	if (rdev->irq.stat_regs.r600.disp_int_cont & DC_HPD4_INTERRUPT) {
 		tmp = RREG32(DC_HPD4_INT_CONTROL);
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
+		// asm volatile ("outb %al, $0xed");
 		tmp |= DC_HPDx_INT_ACK;
 		WREG32(DC_HPD4_INT_CONTROL, tmp);
 	}
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
 	if (ASIC_IS_DCE32(rdev)) {
 		if (rdev->irq.stat_regs.r600.disp_int_cont2 & DC_HPD5_INTERRUPT) {
 			tmp = RREG32(DC_HPD5_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			tmp |= DC_HPDx_INT_ACK;
 			WREG32(DC_HPD5_INT_CONTROL, tmp);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 		}
 		if (rdev->irq.stat_regs.r600.disp_int_cont2 & DC_HPD6_INTERRUPT) {
 			tmp = RREG32(DC_HPD6_INT_CONTROL);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 			tmp |= DC_HPDx_INT_ACK;
 			WREG32(DC_HPD6_INT_CONTROL, tmp);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 		}
 		if (rdev->irq.stat_regs.r600.hdmi0_status & AFMT_AZ_FORMAT_WTRIG) {
 			tmp = RREG32(AFMT_AUDIO_PACKET_CONTROL + DCE3_HDMI_OFFSET0);
+			// asm volatile ("outb %al, $0xed");
 			tmp |= AFMT_AZ_FORMAT_WTRIG_ACK;
 			WREG32(AFMT_AUDIO_PACKET_CONTROL + DCE3_HDMI_OFFSET0, tmp);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 		}
 		if (rdev->irq.stat_regs.r600.hdmi1_status & AFMT_AZ_FORMAT_WTRIG) {
 			tmp = RREG32(AFMT_AUDIO_PACKET_CONTROL + DCE3_HDMI_OFFSET1);
+			// asm volatile ("outb %al, $0xed");
 			tmp |= AFMT_AZ_FORMAT_WTRIG_ACK;
 			WREG32(AFMT_AUDIO_PACKET_CONTROL + DCE3_HDMI_OFFSET1, tmp);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 		}
 	} else {
 		if (rdev->irq.stat_regs.r600.hdmi0_status & HDMI0_AZ_FORMAT_WTRIG) {
 			tmp = RREG32(HDMI0_AUDIO_PACKET_CONTROL);
+			// asm volatile ("outb %al, $0xed");
 			tmp |= HDMI0_AZ_FORMAT_WTRIG_ACK;
 			WREG32(HDMI0_AUDIO_PACKET_CONTROL, tmp);
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
+			// asm volatile ("outb %al, $0xed");
 		}
 		if (rdev->irq.stat_regs.r600.hdmi1_status & HDMI0_AZ_FORMAT_WTRIG) {
 			if (ASIC_IS_DCE3(rdev)) {
 				tmp = RREG32(DCE3_HDMI1_AUDIO_PACKET_CONTROL);
+				// asm volatile ("outb %al, $0xed");
+				// asm volatile ("outb %al, $0xed");
+				// asm volatile ("outb %al, $0xed");
+				// asm volatile ("outb %al, $0xed");
 				tmp |= HDMI0_AZ_FORMAT_WTRIG_ACK;
 				WREG32(DCE3_HDMI1_AUDIO_PACKET_CONTROL, tmp);
 			} else {
 				tmp = RREG32(HDMI1_AUDIO_PACKET_CONTROL);
+				// asm volatile ("outb %al, $0xed");
+				// asm volatile ("outb %al, $0xed");
+				// asm volatile ("outb %al, $0xed");
+				// asm volatile ("outb %al, $0xed");
 				tmp |= HDMI0_AZ_FORMAT_WTRIG_ACK;
 				WREG32(HDMI1_AUDIO_PACKET_CONTROL, tmp);
 			}
 		}
 	}
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
 }
 
 void r600_irq_disable(struct radeon_device *rdev)
@@ -4099,25 +4545,33 @@ int r600_irq_process(struct radeon_device *rdev)
 	bool queue_hdmi = false;
 	bool queue_thermal = false;
 
+	volatile u32 tmp;
+
+//pc2005
+// pr_info("600irq%i%i\n", rdev->ih.enabled, rdev->shutdown);
+
 	if (!rdev->ih.enabled || rdev->shutdown)
 		return IRQ_NONE;
 
 	/* No MSIs, need a dummy read to flush PCI DMAs */
 	if (!rdev->msi_enabled)
-		RREG32(IH_RB_WPTR);
+		tmp = RREG32(IH_RB_WPTR);
 
 	wptr = r600_get_ih_wptr(rdev);
 
 restart_ih:
 	/* is somebody else already processing irqs? */
-	if (atomic_xchg(&rdev->ih.lock, 1))
+	if (atomic_xchg(&rdev->ih.lock, 1)) {
+pr_info("  none\n");
 		return IRQ_NONE;
+	}
 
 	rptr = rdev->ih.rptr;
-	DRM_DEBUG("r600_irq_process start: rptr %d, wptr %d\n", rptr, wptr);
+	// pr_info("r600_irq_process start: rptr %d, wptr %d\n", rptr, wptr);
 
 	/* Order reading of wptr vs. reading of IH ring data */
 	rmb();
+	// rmb();
 
 	/* display interrupts */
 	r600_irq_ack(rdev);
@@ -4136,6 +4590,8 @@ restart_ih:
 					DRM_DEBUG("IH: D1 vblank - IH event w/o asserted irq bit?\n");
 
 				if (rdev->irq.crtc_vblank_int[0]) {
+					pr_info("bef handle_vblank0\n");
+
 					drm_handle_vblank(rdev->ddev, 0);
 					rdev->pm.vblank_sync = true;
 					wake_up(&rdev->irq.vblank_queue);
@@ -4166,6 +4622,8 @@ restart_ih:
 					DRM_DEBUG("IH: D2 vblank - IH event w/o asserted irq bit?\n");
 
 				if (rdev->irq.crtc_vblank_int[1]) {
+					pr_info("bef handle_vblank1\n");
+
 					drm_handle_vblank(rdev->ddev, 1);
 					rdev->pm.vblank_sync = true;
 					wake_up(&rdev->irq.vblank_queue);
@@ -4386,8 +4844,14 @@ void r600_mmio_hdp_flush(struct radeon_device *rdev)
 	    rdev->vram_scratch.ptr && !(rdev->flags & RADEON_IS_AGP)) {
 		void __iomem *ptr = (void *)rdev->vram_scratch.ptr;
 
+		// asm volatile ("outb %al, $0xed");
+
 		WREG32(HDP_DEBUG1, 0);
+		// asm volatile ("outb %al, $0xed");
+
 		readl((void __iomem *)ptr);
+		// asm volatile ("outb %al, $0xed");
+
 	} else
 		WREG32(R_005480_HDP_MEM_COHERENCY_FLUSH_CNTL, 0x1);
 }

@@ -60,6 +60,7 @@
 #include <asm/fpu/xstate.h>
 #include <asm/vm86.h>
 #include <asm/umip.h>
+#include <asm/soft86.h>
 #include <asm/insn.h>
 #include <asm/insn-eval.h>
 #include <asm/vdso.h>
@@ -74,6 +75,9 @@
 #endif
 
 #include <asm/proto.h>
+
+#include <asm/fpu/signal.h>
+
 
 DECLARE_BITMAP(system_vectors, NR_VECTORS);
 
@@ -288,12 +292,164 @@ __setup("ibt=", ibt_setup);
 
 #endif /* CONFIG_X86_KERNEL_IBT */
 
+
+//https://elixir.free-electrons.com/linux/v6.3.9/source/arch/x86/math-emu/fpu_emu.h#L118
+#define freg_size (sizeof(unsigned) + sizeof(unsigned) + sizeof(short))
+
 #ifdef CONFIG_X86_F00F_BUG
 void handle_invalid_op(struct pt_regs *regs)
 #else
 static inline void handle_invalid_op(struct pt_regs *regs)
 #endif
 {
+
+	// printk(KERN_DEFAULT "IP beg %08lx\n", regs->ip);
+
+#ifdef CONFIG_X86_INSN_EMU
+	/* Attempt instruction emulation */
+	if (user_mode(regs) && soft86_execute(regs)) {
+		// printk(KERN_DEFAULT "IP cmov %08lx\n", regs->ip);
+		return;
+	}
+#endif
+
+#ifdef CONFIG_MATH_EMULATION
+	//try math emulation
+	if (user_mode(regs)) {
+		// printk(KERN_DEFAULT "TRY MATH\n");
+
+		struct task_struct *task = current;
+		struct fpu *fpu = &task->thread.fpu;
+		struct math_emu_info info = { };
+		struct swregs_state * sw = &fpu->fpstate->regs.soft;
+
+		u8 fpu_reg_temp[8*freg_size];	//8 fpu regs temp
+		void * const fpu_reg_base = (void *)sw->st_space;
+
+		unsigned top;
+
+/*
+============
+u8	ftop;
+u8	changed;		//unused o_O
+u8	lookahead;		//unused (disabled by me)
+u8	no_update;		//probably irrelevant between opcodes
+u8	rm;				//FPU_rm seems to be used only internally for one call
+u8	alimit;			//also seems to be internal use
+struct math_emu_info	*info;		//selfset
+u32	entry_eip;		//unused! some eip is used in .info
+
+S387->ftop = (S387->swd >> SW_Top_Shift) & 7;
+*/
+
+// printk(KERN_DEFAULT "TIF_NEED_FPU_LOAD %i\n", test_thread_flag(TIF_NEED_FPU_LOAD));
+
+		// cond_local_irq_enable(regs);
+
+		info.regs = regs;
+
+		clear_thread_flag(TIF_NEED_FPU_LOAD);
+
+		fpu_sync_fpstate(fpu);
+
+		//restore switch_fpu_return or fpregs_restore_userregs
+
+
+		// fpregs_lock();
+		// trace_x86_fpu_before_save(fpu);
+  //
+		// save_fpregs_to_fpstate(fpu);
+  //
+		// trace_x86_fpu_after_save(fpu);
+		// fpregs_unlock();
+
+
+		//convert ST0-ST7 from real hw to virtual BC0-BC7 positions in emu
+
+		//fsave -> temp, top 6
+		//[0] -> [6]
+		//[1] -> [7]
+		//[2] -> [0]
+		//[3] -> [1]
+		//[4] -> [2]
+		//[5] -> [3]
+		//[6] -> [4]
+		//[7] -> [5]
+
+		top = (sw->swd >> 11) & 7;
+
+		//ugly
+		for (unsigned bci=0;bci<8;bci++) {
+			const unsigned sti = (bci - top) & 7;
+
+			memcpy(
+				fpu_reg_temp + bci*freg_size,
+				fpu_reg_base + sti*freg_size,
+				freg_size
+			);
+		}
+
+		memcpy(fpu_reg_base, fpu_reg_temp, 8*(4+4+2));
+
+		/////////
+
+		sw->ftop = top;
+		// // sw->ftop = 0;
+
+		math_emulate(&info);
+
+		//load new computed top
+		top = sw->ftop;
+
+		//erase hw FPU state TOP bitfield
+		sw->swd &= ~(7 << 11);
+
+		//fill hw FPU TOP bitfield with temp value from tfop
+		sw->swd |= (top & 7) << 11;
+
+		//now fpu_base has BC positions and we need to translate it to ST positions
+
+		//ugly
+		for (unsigned bci=0;bci<8;bci++) {
+			const unsigned sti = (bci - top) & 7;
+
+			memcpy(
+				fpu_reg_temp + sti*freg_size,
+				fpu_reg_base + bci*freg_size,
+				freg_size
+			);
+		}
+
+		memcpy(fpu_reg_base, fpu_reg_temp, 8*(4+4+2));
+
+		//should do switch_fpu_return(); automatically
+
+		// cond_local_irq_disable(regs);
+
+// printk(KERN_DEFAULT "+-+-IP fpu %08lx\n", regs->ip);
+// printk(KERN_DEFAULT " twd %08x\n", sw->twd);
+// printk(KERN_DEFAULT " swd %08x\n", sw->swd);
+
+/*
+printk(KERN_DEFAULT " is fpu %i, %i\n",
+	   static_cpu_has(X86_FEATURE_FPU),
+	   fpu == this_cpu_read(fpu_fpregs_owner_ctx) && smp_processor_id() == fpu->last_cpu
+
+	   // fpregs_state_valid(fpu, smp_processor_id())
+	   );
+*/
+// sw->st_space[10] = 0x12345678;
+
+set_thread_flag(TIF_NEED_FPU_LOAD);
+
+// switch_fpu_return();
+// fpregs_restore_userregs();
+restore_fpregs_from_fpstate(fpu->fpstate, XFEATURE_MASK_FPSTATE);
+
+		return;
+	}
+#endif
+
 	do_error_trap(regs, 0, "invalid opcode", X86_TRAP_UD, SIGILL,
 		      ILL_ILLOPN, error_get_trap_addr(regs));
 }

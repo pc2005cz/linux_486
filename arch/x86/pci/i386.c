@@ -381,8 +381,10 @@ void pcibios_resource_survey_bus(struct pci_bus *bus)
 	pcibios_allocate_resources(bus, 0);
 	pcibios_allocate_resources(bus, 1);
 
-	if (!(pci_probe & PCI_ASSIGN_ROMS))
+	if (!(pci_probe & PCI_ASSIGN_ROMS)) {
+		pr_info("RRRR1 (!(pci_probe & PCI_ASSIGN_ROMS))\n");
 		pcibios_allocate_rom_resources(bus);
+	}
 }
 
 void __init pcibios_resource_survey(void)

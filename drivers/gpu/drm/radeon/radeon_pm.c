@@ -178,6 +178,8 @@ static void radeon_set_power_state(struct radeon_device *rdev)
 	    (rdev->pm.requested_power_state_index == rdev->pm.current_power_state_index))
 		return;
 
+	pr_info("radeon_gui_idle\n");
+
 	if (radeon_gui_idle(rdev)) {
 		sclk = rdev->pm.power_state[rdev->pm.requested_power_state_index].
 			clock_info[rdev->pm.requested_clock_mode_index].sclk;
@@ -725,7 +727,7 @@ static ssize_t radeon_hwmon_show_sclk(struct device *dev,
 	if (rdev->asic->dpm.get_current_sclk)
 		sclk = radeon_dpm_get_current_sclk(rdev);
 
-	/* Value returned by dpm is in 10 KHz units, need to convert it into Hz 
+	/* Value returned by dpm is in 10 KHz units, need to convert it into Hz
 	   for hwmon */
 	sclk *= 10000;
 
@@ -1343,6 +1345,8 @@ dpm_resume_fail:
 
 void radeon_pm_resume(struct radeon_device *rdev)
 {
+	// pr_info("PM resume\n");
+
 	if (rdev->pm.pm_method == PM_METHOD_DPM)
 		radeon_pm_resume_dpm(rdev);
 	else
@@ -1444,6 +1448,9 @@ static int radeon_pm_init_dpm(struct radeon_device *rdev)
 	if (radeon_dpm == 1)
 		radeon_dpm_print_power_states(rdev);
 	radeon_dpm_setup_asic(rdev);
+
+	// pr_info("PM init DPM\n");
+
 	ret = radeon_dpm_enable(rdev);
 	mutex_unlock(&rdev->pm.mutex);
 	if (ret)

@@ -1813,12 +1813,17 @@ static int rv770_startup(struct radeon_device *rdev)
 			return r;
 	}
 
+	pr_info("rv770 r600_irq_init\n");
+
 	r = r600_irq_init(rdev);
 	if (r) {
 		DRM_ERROR("radeon: IH init failed (%d).\n", r);
 		radeon_irq_kms_fini(rdev);
 		return r;
 	}
+
+	pr_info("rv770 r600_irq_set\n");
+
 	r600_irq_set(rdev);
 
 	ring = &rdev->ring[RADEON_RING_TYPE_GFX_INDEX];

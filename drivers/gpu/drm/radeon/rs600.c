@@ -107,13 +107,27 @@ void avivo_wait_for_vblank(struct radeon_device *rdev, int crtc)
 			if (!avivo_is_counter_moving(rdev, crtc))
 				break;
 		}
+
+		//pc2005
+		// if (i > 100000) {
+		// 	pr_info("vblank wait timeout!\n");
+		// 	break;
+		// }
 	}
+
+	i = 0;
 
 	while (!avivo_is_in_vblank(rdev, crtc)) {
 		if (i++ % 100 == 0) {
 			if (!avivo_is_counter_moving(rdev, crtc))
 				break;
 		}
+
+		//pc2005
+		// if (i > 100000) {
+		// 	pr_info("vblank wait timeout!\n");
+		// 	break;
+		// }
 	}
 }
 
@@ -362,14 +376,18 @@ bool rs600_hpd_sense(struct radeon_device *rdev, enum radeon_hpd_id hpd)
 	u32 tmp;
 	bool connected = false;
 
+	// asm volatile ("outb %al, $0xed");
+
 	switch (hpd) {
 	case RADEON_HPD_1:
 		tmp = RREG32(R_007D04_DC_HOT_PLUG_DETECT1_INT_STATUS);
+		// asm volatile ("outb %al, $0xed");
 		if (G_007D04_DC_HOT_PLUG_DETECT1_SENSE(tmp))
 			connected = true;
 		break;
 	case RADEON_HPD_2:
 		tmp = RREG32(R_007D14_DC_HOT_PLUG_DETECT2_INT_STATUS);
+		// asm volatile ("outb %al, $0xed");
 		if (G_007D14_DC_HOT_PLUG_DETECT2_SENSE(tmp))
 			connected = true;
 		break;

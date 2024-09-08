@@ -61,6 +61,18 @@
  */
 pgprot_t ttm_prot_from_caching(enum ttm_caching caching, pgprot_t tmp)
 {
+
+	if (caching != ttm_uncached) {
+		pr_info("!F! caching=%u (c%u wc%u u%u)\n",
+			caching, ttm_cached, ttm_write_combined, ttm_uncached
+		);
+	}
+
+	//pc2005
+	tmp = pgprot_noncached(tmp);
+	return tmp;
+
+
 	/* Cached mappings need no adjustment */
 	if (caching == ttm_cached)
 		return tmp;

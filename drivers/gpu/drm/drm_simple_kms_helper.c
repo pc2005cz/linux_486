@@ -183,6 +183,8 @@ static int drm_simple_kms_crtc_enable_vblank(struct drm_crtc *crtc)
 {
 	struct drm_simple_display_pipe *pipe;
 
+	pr_info("drm_simple_kms_crtc_enable_vblank\n");
+
 	pipe = container_of(crtc, struct drm_simple_display_pipe, crtc);
 	if (!pipe->funcs || !pipe->funcs->enable_vblank)
 		return 0;

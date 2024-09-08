@@ -184,7 +184,8 @@ void ttm_resource_init(struct ttm_buffer_object *bo,
 	res->bus.addr = NULL;
 	res->bus.offset = 0;
 	res->bus.is_iomem = false;
-	res->bus.caching = ttm_cached;
+	res->bus.caching = ttm_uncached;	//pc2005 uncached?
+	// res->bus.caching = ttm_cached;	//pc2005 uncached?
 	res->bo = bo;
 
 	man = ttm_manager_type(bo->bdev, place->mem_type);
@@ -668,6 +669,14 @@ ttm_kmap_iter_linear_io_init(struct ttm_kmap_iter_linear_io *iter_io,
 	} else {
 		iter_io->needs_unmap = true;
 		memset(&iter_io->dmap, 0, sizeof(iter_io->dmap));
+
+		//pc2005
+		if (mem->bus.caching != ttm_uncached) {
+			pr_info("!E! mem->bus.caching=%u (c%u wc%u u%u)\n",
+				mem->bus.caching, ttm_cached, ttm_write_combined, ttm_uncached
+			);
+		}
+
 		if (mem->bus.caching == ttm_write_combined)
 			iosys_map_set_vaddr_iomem(&iter_io->dmap,
 						  ioremap_wc(mem->bus.offset,

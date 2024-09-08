@@ -585,6 +585,8 @@ void ahci_save_initial_config(struct device *dev, struct ahci_host_priv *hpriv)
 		if (hpriv->saved_port_cap[i])
 			continue;
 
+//		pr_info("AH1\n");
+
 		port_mmio = __ahci_port_base(hpriv, i);
 		hpriv->saved_port_cap[i] =
 			readl(port_mmio + PORT_CMD) & PORT_CMD_CAP;
@@ -631,6 +633,9 @@ static void ahci_restore_initial_config(struct ata_host *host)
 	(void) readl(mmio + HOST_PORTS_IMPL);	/* flush */
 
 	for_each_set_bit(i, &port_map, AHCI_MAX_PORTS) {
+
+//		pr_info("AH2\n");
+
 		port_mmio = __ahci_port_base(hpriv, i);
 		writel(hpriv->saved_port_cap[i], port_mmio + PORT_CMD);
 	}
@@ -682,11 +687,22 @@ void ahci_start_engine(struct ata_port *ap)
 	void __iomem *port_mmio = ahci_port_base(ap);
 	u32 tmp;
 
+	// pr_info("AH2 !! ahci_start_engine\n");
+
 	/* start DMA */
 	tmp = readl(port_mmio + PORT_CMD);
 	tmp |= PORT_CMD_START;
+
+	// pr_info("AH3 bef write\n");
+
 	writel(tmp, port_mmio + PORT_CMD);
+
+	// pr_info("AH4 bef flush\n");
+
 	readl(port_mmio + PORT_CMD); /* flush */
+
+	// pr_info("AH5 fin\n");
+
 }
 EXPORT_SYMBOL_GPL(ahci_start_engine);
 
@@ -709,7 +725,10 @@ int ahci_stop_engine(struct ata_port *ap)
 		return -EIO;
 	}
 
+//	pr_info("AH10\n");
+
 	tmp = readl(port_mmio + PORT_CMD);
+//	pr_info("AH11\n");
 
 	/* check if the HBA is idle */
 	if ((tmp & (PORT_CMD_START | PORT_CMD_LIST_ON)) == 0)
@@ -729,9 +748,14 @@ int ahci_stop_engine(struct ata_port *ap)
 	tmp &= ~PORT_CMD_START;
 	writel(tmp, port_mmio + PORT_CMD);
 
+//	pr_info("AH12\n");
+
 	/* wait for engine to stop. This could be as long as 500 msec */
 	tmp = ata_wait_register(ap, port_mmio + PORT_CMD,
 				PORT_CMD_LIST_ON, PORT_CMD_LIST_ON, 1, 500);
+
+//	pr_info("AH13 after wait!\n");
+
 	if (tmp & PORT_CMD_LIST_ON)
 		return -EIO;
 
@@ -745,6 +769,7 @@ void ahci_start_fis_rx(struct ata_port *ap)
 	struct ahci_host_priv *hpriv = ap->host->private_data;
 	struct ahci_port_priv *pp = ap->private_data;
 	u32 tmp;
+	u32 tmp2;
 
 	/* set FIS registers */
 	if (hpriv->cap & HOST_CAP_64)
@@ -757,13 +782,52 @@ void ahci_start_fis_rx(struct ata_port *ap)
 		       port_mmio + PORT_FIS_ADDR_HI);
 	writel(pp->rx_fis_dma & 0xffffffff, port_mmio + PORT_FIS_ADDR);
 
+//	pr_info("AH14\n");
+
 	/* enable FIS reception */
 	tmp = readl(port_mmio + PORT_CMD);
+	// pr_info("AH15a\n");
+	// pr_info("AH15b\n");
+	// pr_info("AH15c\n");
+	// pr_info("AH15d\n");
 	tmp |= PORT_CMD_FIS_RX;
+
+	//https://elixir.free-electrons.com/linux/v6.3.9/source/arch/x86/kernel/io_delay.c#L38
+	//https://elixir.free-electrons.com/linux/v6.3.9/source/arch/x86/include/asm/io.h#L67
+	//https://elixir.free-electrons.com/linux/v6.3.9/source/arch/x86/include/asm/barrier.h#L17
+
+	// asm volatile ("outb %al, $0xed");
+	// tmp2 = readl(port_mmio);
+	// tmp2 = readl(port_mmio);
+	// tmp2 = readl(port_mmio);
+	// tmp2 = readl(port_mmio);
+	// rmb();
+	// rmb();
+	// rmb();
+	// rmb();
+	// rmb();
+
 	writel(tmp, port_mmio + PORT_CMD);
+	// rmb();
+	// rmb();
+	// rmb();
+	// rmb();
+	// rmb();
+	// asm volatile ("outb %al, $0xed");
+	// pr_info("AH16bff\n");	//this uncommented will make the read work
+
+	// tmp2 = readl(port_mmio);
+	// tmp2 = readl(port_mmio);
+	// tmp2 = readl(port_mmio);
+	// tmp2 = readl(port_mmio);
 
 	/* flush */
+	// tmp2 =
 	readl(port_mmio + PORT_CMD);
+
+	// tmp2 = 0;
+//	pr_info("AH16 after flush, fin %08x %08x\n", tmp, tmp2);
+
 }
 EXPORT_SYMBOL_GPL(ahci_start_fis_rx);
 
@@ -772,14 +836,22 @@ static int ahci_stop_fis_rx(struct ata_port *ap)
 	void __iomem *port_mmio = ahci_port_base(ap);
 	u32 tmp;
 
+//	pr_info("AH17 stop\n");
+
 	/* disable FIS reception */
 	tmp = readl(port_mmio + PORT_CMD);
 	tmp &= ~PORT_CMD_FIS_RX;
+//	pr_info("AH18\n");
 	writel(tmp, port_mmio + PORT_CMD);
+
+//	pr_info("AH19\n");
 
 	/* wait for completion, spec says 500ms, give it 1000 */
 	tmp = ata_wait_register(ap, port_mmio + PORT_CMD, PORT_CMD_FIS_ON,
 				PORT_CMD_FIS_ON, 10, 1000);
+
+//	pr_info("AH20 after wait\n");
+
 	if (tmp & PORT_CMD_FIS_ON)
 		return -EBUSY;
 
@@ -792,6 +864,8 @@ static void ahci_power_up(struct ata_port *ap)
 	void __iomem *port_mmio = ahci_port_base(ap);
 	u32 cmd;
 
+	// pr_info("AH20 power\n");
+
 	cmd = readl(port_mmio + PORT_CMD) & ~PORT_CMD_ICC_MASK;
 
 	/* spin up device */
@@ -800,8 +874,13 @@ static void ahci_power_up(struct ata_port *ap)
 		writel(cmd, port_mmio + PORT_CMD);
 	}
 
+	// pr_info("AH21\n");
+
 	/* wake up link */
 	writel(cmd | PORT_CMD_ICC_ACTIVE, port_mmio + PORT_CMD);
+
+	// pr_info("AH22 fin\n");
+
 }
 
 static int ahci_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
@@ -811,6 +890,9 @@ static int ahci_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
 	struct ahci_host_priv *hpriv = ap->host->private_data;
 	struct ahci_port_priv *pp = ap->private_data;
 	void __iomem *port_mmio = ahci_port_base(ap);
+
+
+//	pr_info("AH23 lpm\n");
 
 	if (policy != ATA_LPM_MAX_POWER) {
 		/* wakeup flag only applies to the max power policy */
@@ -835,8 +917,13 @@ static int ahci_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
 				cmd &= ~(PORT_CMD_ASP | PORT_CMD_ALPE);
 			cmd |= PORT_CMD_ICC_ACTIVE;
 
+//			pr_info("AH24a bef write\n");
+
 			writel(cmd, port_mmio + PORT_CMD);
+//			pr_info("AH24b between\n");
 			readl(port_mmio + PORT_CMD);
+
+//			pr_info("AH24c readback\n");
 
 			/* wait 10ms to be sure we've come out of LPM state */
 			ata_msleep(ap, 10);
@@ -849,6 +936,8 @@ static int ahci_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
 				cmd |= PORT_CMD_ASP;
 			else if (policy == ATA_LPM_MIN_POWER_WITH_PARTIAL)
 				cmd &= ~PORT_CMD_ASP;
+
+//			pr_info("AH24d\n");
 
 			/* write out new cmd value */
 			writel(cmd, port_mmio + PORT_CMD);
@@ -873,6 +962,8 @@ static int ahci_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
 		pp->intr_mask |= PORT_IRQ_PHYRDY;
 		writel(pp->intr_mask, port_mmio + PORT_IRQ_MASK);
 	}
+
+//	pr_info("AH24 lpm fin\n");
 
 	return 0;
 }
@@ -1284,6 +1375,8 @@ static void ahci_port_init(struct device *dev, struct ata_port *ap,
 
 	writel(1 << port_no, mmio + HOST_IRQ_STAT);
 
+//	pr_info("AH25 ahci_port_init\n");
+
 	/* mark esata ports */
 	tmp = readl(port_mmio + PORT_CMD);
 	if ((tmp & PORT_CMD_ESP) && (hpriv->cap & HOST_CAP_SXS))
@@ -1348,12 +1441,17 @@ void ahci_fill_cmd_slot(struct ahci_port_priv *pp, unsigned int tag,
 {
 	dma_addr_t cmd_tbl_dma;
 
+	// pr_info("AFCS %p %i\n", pp->cmd_slot, tag);
+
 	cmd_tbl_dma = pp->cmd_tbl_dma + tag * AHCI_CMD_TBL_SZ;
 
 	pp->cmd_slot[tag].opts = cpu_to_le32(opts);
 	pp->cmd_slot[tag].status = 0;
 	pp->cmd_slot[tag].tbl_addr = cpu_to_le32(cmd_tbl_dma & 0xffffffff);
 	pp->cmd_slot[tag].tbl_addr_hi = cpu_to_le32((cmd_tbl_dma >> 16) >> 16);
+
+	//pc2005
+	// pr_info("AFCS fin\n");
 }
 EXPORT_SYMBOL_GPL(ahci_fill_cmd_slot);
 
@@ -1384,16 +1482,23 @@ int ahci_kick_engine(struct ata_port *ap)
 		goto out_restart;
 	}
 
+//	pr_info("AH26 bef read \n");
+
 	/* perform CLO */
 	tmp = readl(port_mmio + PORT_CMD);
 	tmp |= PORT_CMD_CLO;
+//	pr_info("AH26 bef write\n");
 	writel(tmp, port_mmio + PORT_CMD);
+
+//	pr_info("AH26 bef wait\n");
 
 	rc = 0;
 	tmp = ata_wait_register(ap, port_mmio + PORT_CMD,
 				PORT_CMD_CLO, PORT_CMD_CLO, 1, 500);
 	if (tmp & PORT_CMD_CLO)
 		rc = -EIO;
+
+//	pr_info("AH26 wait done %i\n", rc);
 
 	/* restart engine */
  out_restart:
@@ -1631,6 +1736,8 @@ static void ahci_postreset(struct ata_link *link, unsigned int *class)
 
 	ata_std_postreset(link, class);
 
+//	pr_info("AH27 postreset\n");
+
 	/* Make sure port's ATAPI bit is set appropriately */
 	new_tmp = tmp = readl(port_mmio + PORT_CMD);
 	if (*class == ATA_DEV_ATAPI)
@@ -1638,8 +1745,11 @@ static void ahci_postreset(struct ata_link *link, unsigned int *class)
 	else
 		new_tmp &= ~PORT_CMD_ATAPI;
 	if (new_tmp != tmp) {
+//		pr_info("AH27 W\n");
 		writel(new_tmp, port_mmio + PORT_CMD);
+//		pr_info("AH27 R\n");
 		readl(port_mmio + PORT_CMD); /* flush */
+//		pr_info("AH27 aft\n");
 	}
 }
 
@@ -1730,6 +1840,8 @@ static void ahci_fbs_dec_intr(struct ata_port *ap)
 	writel(fbs | PORT_FBS_DEC, port_mmio + PORT_FBS);
 	fbs = readl(port_mmio + PORT_FBS);
 	while ((fbs & PORT_FBS_DEC) && retries--) {
+		pr_info("FBS 0x%08x\n", fbs);	//pc2005
+
 		udelay(1);
 		fbs = readl(port_mmio + PORT_FBS);
 	}
@@ -2150,6 +2262,8 @@ static void ahci_qc_ncq_fill_rtf(struct ata_port *ap, u64 done_mask)
 			struct ata_queued_cmd *qc;
 			unsigned int tag = __ffs64(done_mask);
 
+			// pr_info("RTF %u\n", tag);	//pc2005
+
 			qc = ata_qc_from_tag(ap, tag);
 			if (qc && ata_is_ncq(qc->tf.protocol)) {
 				qc->result_tf.status = status;
@@ -2170,6 +2284,8 @@ static void ahci_qc_ncq_fill_rtf(struct ata_port *ap, u64 done_mask)
 	while (done_mask) {
 		struct ata_queued_cmd *qc;
 		unsigned int tag = __ffs64(done_mask);
+
+		// pr_info("RTF2 %u\n", tag);	//pc2005
 
 		qc = ata_qc_from_tag(ap, tag);
 		if (qc && ata_is_ncq(qc->tf.protocol)) {
@@ -2388,9 +2504,13 @@ static void ahci_pmp_attach(struct ata_port *ap)
 	struct ahci_port_priv *pp = ap->private_data;
 	u32 cmd;
 
+//	pr_info("AH28 a\n");
+
 	cmd = readl(port_mmio + PORT_CMD);
+//	pr_info("AH28 b\n");
 	cmd |= PORT_CMD_PMP;
 	writel(cmd, port_mmio + PORT_CMD);
+//	pr_info("AH28 c\n");
 
 	ahci_enable_fbs(ap);
 
@@ -2416,9 +2536,13 @@ static void ahci_pmp_detach(struct ata_port *ap)
 
 	ahci_disable_fbs(ap);
 
+//	pr_info("AH29 a\n");
+
 	cmd = readl(port_mmio + PORT_CMD);
+//	pr_info("AH29 b\n");
 	cmd &= ~PORT_CMD_PMP;
 	writel(cmd, port_mmio + PORT_CMD);
+//	pr_info("AH29 c\n");
 
 	pp->intr_mask &= ~PORT_IRQ_BAD_PMP;
 
@@ -2503,7 +2627,11 @@ static int ahci_port_start(struct ata_port *ap)
 	/* check FBS capability */
 	if ((hpriv->cap & HOST_CAP_FBS) && sata_pmp_supported(ap)) {
 		void __iomem *port_mmio = ahci_port_base(ap);
+
+		// pr_info("AH30a\n");
+
 		u32 cmd = readl(port_mmio + PORT_CMD);
+//		pr_info("AH30b %08x\n", cmd);
 		if (cmd & PORT_CMD_FBSCP)
 			pp->fbs_supported = true;
 		else if (hpriv->flags & AHCI_HFLAG_YES_FBS) {

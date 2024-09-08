@@ -100,6 +100,8 @@ int radeon_gem_object_create(struct radeon_device *rdev, unsigned long size,
 	unsigned long max_size;
 	int r;
 
+//	pr_info("!!!radeon_gem_object_create\n");
+
 	*obj = NULL;
 	/* At least align on page size */
 	if (alignment < PAGE_SIZE) {
@@ -137,6 +139,8 @@ retry:
 	mutex_lock(&rdev->gem.mutex);
 	list_add_tail(&robj->list, &rdev->gem.objects);
 	mutex_unlock(&rdev->gem.mutex);
+
+//	pr_info("!!!radeon_gem_object_create OK\n");
 
 	return 0;
 }
@@ -336,15 +340,21 @@ int radeon_gem_create_ioctl(struct drm_device *dev, void *data,
 	uint32_t handle;
 	int r;
 
+//	pr_info("!!!radeon_gem_create_ioctl\n");
+
 	down_read(&rdev->exclusive_lock);
 	/* create a gem object to contain this object in */
 	args->size = roundup(args->size, PAGE_SIZE);
 	r = radeon_gem_object_create(rdev, args->size, args->alignment,
 				     args->initial_domain, args->flags,
 				     false, &gobj);
+
+//	pr_info("!!!A0 %i\n", r);
+
 	if (r) {
 		up_read(&rdev->exclusive_lock);
 		r = radeon_gem_handle_lockup(rdev, r);
+	pr_info("!!!A1 %i\n", r);
 		return r;
 	}
 	r = drm_gem_handle_create(filp, gobj, &handle);
@@ -353,6 +363,7 @@ int radeon_gem_create_ioctl(struct drm_device *dev, void *data,
 	if (r) {
 		up_read(&rdev->exclusive_lock);
 		r = radeon_gem_handle_lockup(rdev, r);
+	pr_info("!!!A2 %i\n", r);
 		return r;
 	}
 	args->handle = handle;
@@ -389,6 +400,8 @@ int radeon_gem_userptr_ioctl(struct drm_device *dev, void *data,
 
 	} else if (!(args->flags & RADEON_GEM_USERPTR_ANONONLY) ||
 		   !(args->flags & RADEON_GEM_USERPTR_REGISTER)) {
+
+		// pr_info("!!!userptr ioctl\n");
 
 		/* if we want to write to it we must require anonymous
 		   memory and install a MMU notifier */
@@ -689,6 +702,7 @@ int radeon_gem_va_ioctl(struct drm_device *dev, void *data,
 
 	if (!rdev->vm_manager.enabled) {
 		args->operation = RADEON_VA_RESULT_ERROR;
+                pr_info("!!!enotty gem va\n");
 		return -ENOTTY;
 	}
 

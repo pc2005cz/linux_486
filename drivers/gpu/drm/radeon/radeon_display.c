@@ -417,6 +417,10 @@ static void radeon_flip_work_func(struct work_struct *__work)
 	int r;
 	int vpos, hpos;
 
+	unsigned timeout = 0;
+
+	// pr_info("radeon_flip_work_func\n");
+
 	down_read(&rdev->exclusive_lock);
 	if (work->fence) {
 		struct radeon_fence *fence;
@@ -459,8 +463,16 @@ static void radeon_flip_work_func(struct work_struct *__work)
 		(DRM_SCANOUTPOS_VALID | DRM_SCANOUTPOS_IN_VBLANK) &&
 		(!ASIC_IS_AVIVO(rdev) ||
 		((int) (work->target_vblank -
-		crtc->funcs->get_vblank_counter(crtc)) > 0)))
+		crtc->funcs->get_vblank_counter(crtc)) > 0))) {
+
+		if (timeout > 1000) {
+			// pr_info("radeon_flip_work_func break\n");
+			break;
+		}
+
 		usleep_range(1000, 2000);
+		timeout++;
+	}
 
 	/* We borrow the event spin lock for protecting flip_status */
 	spin_lock_irqsave(&crtc->dev->event_lock, flags);
@@ -493,6 +505,8 @@ static int radeon_crtc_page_flip_target(struct drm_crtc *crtc,
 	uint64_t base;
 	unsigned long flags;
 	int r;
+
+	// pr_info("radeon_crtc_page_flip_target\n");
 
 	work = kzalloc(sizeof *work, GFP_KERNEL);
 	if (work == NULL)

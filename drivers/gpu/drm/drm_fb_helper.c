@@ -1434,6 +1434,7 @@ int drm_fb_helper_ioctl(struct fb_info *info, unsigned int cmd,
 		ret = 0;
 		break;
 	default:
+                pr_info("!!!enotty fb helper\n");
 		ret = -ENOTTY;
 	}
 

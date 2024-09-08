@@ -2941,7 +2941,7 @@ void evergreen_ring_ib_execute(struct radeon_device *rdev, struct radeon_ib *ib)
 	if (ring->rptr_save_reg) {
 		next_rptr = ring->wptr + 3 + 4;
 		radeon_ring_write(ring, PACKET3(PACKET3_SET_CONFIG_REG, 1));
-		radeon_ring_write(ring, ((ring->rptr_save_reg - 
+		radeon_ring_write(ring, ((ring->rptr_save_reg -
 					  PACKET3_SET_CONFIG_REG_START) >> 2));
 		radeon_ring_write(ring, next_rptr);
 	} else if (rdev->wb.enabled) {
@@ -4499,17 +4499,24 @@ int evergreen_irq_set(struct radeon_device *rdev)
 	u32 dma_cntl, dma_cntl1 = 0;
 	u32 thermal_int = 0;
 
+	// pr_info("AF1\n");
+
 	if (!rdev->irq.installed) {
 		WARN(1, "Can't enable IRQ/MSI because no handler is installed\n");
 		return -EINVAL;
 	}
+
+	// pr_info("AF2\n");
+
 	/* don't enable anything if the ih is disabled */
 	if (!rdev->ih.enabled) {
+		// pr_info("AF3\n");
 		r600_disable_interrupts(rdev);
 		/* force the active interrupt state to all disabled */
 		evergreen_disable_interrupt_state(rdev);
 		return 0;
 	}
+	// pr_info("AF4\n");
 
 	if (rdev->family == CHIP_ARUBA)
 		thermal_int = RREG32(TN_CG_THERMAL_INT_CTRL) &
@@ -4518,7 +4525,11 @@ int evergreen_irq_set(struct radeon_device *rdev)
 		thermal_int = RREG32(CG_THERMAL_INT) &
 			~(THERM_INT_MASK_HIGH | THERM_INT_MASK_LOW);
 
+	// pr_info("AF4b %x\n", thermal_int);
+
 	dma_cntl = RREG32(DMA_CNTL) & ~TRAP_ENABLE;
+
+	// pr_info("AF5\n");
 
 	if (rdev->family >= CHIP_CAYMAN) {
 		/* enable CP interrupts on all rings */
@@ -4542,6 +4553,8 @@ int evergreen_irq_set(struct radeon_device *rdev)
 		}
 	}
 
+	// pr_info("AF6\n");
+
 	if (atomic_read(&rdev->irq.ring_int[R600_RING_TYPE_DMA_INDEX])) {
 		DRM_DEBUG("r600_irq_set: sw int dma\n");
 		dma_cntl |= TRAP_ENABLE;
@@ -4554,6 +4567,8 @@ int evergreen_irq_set(struct radeon_device *rdev)
 			dma_cntl1 |= TRAP_ENABLE;
 		}
 	}
+
+	// pr_info("AF7\n");
 
 	if (rdev->irq.dpm_thermal) {
 		DRM_DEBUG("dpm thermal\n");
@@ -4574,6 +4589,8 @@ int evergreen_irq_set(struct radeon_device *rdev)
 
 	WREG32(GRBM_INT_CNTL, grbm_int_cntl);
 
+	// pr_info("AF8\n");
+
 	for (i = 0; i < rdev->num_crtc; i++) {
 		radeon_irq_kms_set_irq_n_enabled(
 		    rdev, INT_MASK + crtc_offsets[i],
@@ -4582,10 +4599,17 @@ int evergreen_irq_set(struct radeon_device *rdev)
 		    atomic_read(&rdev->irq.pflip[i]), "vblank", i);
 	}
 
-	for (i = 0; i < rdev->num_crtc; i++)
+	// pr_info("AF9\n");
+
+	for (i = 0; i < rdev->num_crtc; i++) {
+		// pr_info("AFa %i\n", i);
+
 		WREG32(GRPH_INT_CONTROL + crtc_offsets[i], GRPH_PFLIP_INT_MASK);
+	}
 
 	for (i = 0; i < 6; i++) {
+		// pr_info("AFb %i\n", i);
+
 		radeon_irq_kms_set_irq_n_enabled(
 		    rdev, DC_HPDx_INT_CONTROL(i),
 		    DC_HPDx_INT_EN | DC_HPDx_RX_INT_EN,
@@ -4597,6 +4621,8 @@ int evergreen_irq_set(struct radeon_device *rdev)
 	else
 		WREG32(CG_THERMAL_INT, thermal_int);
 
+	// pr_info("AF10\n");
+
 	for (i = 0; i < 6; i++) {
 		radeon_irq_kms_set_irq_n_enabled(
 		    rdev, AFMT_AUDIO_PACKET_CONTROL + crtc_offsets[i],
@@ -4604,8 +4630,12 @@ int evergreen_irq_set(struct radeon_device *rdev)
 		    rdev->irq.afmt[i], "HDMI", i);
 	}
 
+	// pr_info("AF10.5\n");
+
 	/* posting read */
 	RREG32(SRBM_STATUS);
+
+	// pr_info("AF11\n");
 
 	return 0;
 }
@@ -4717,18 +4747,24 @@ int evergreen_irq_process(struct radeon_device *rdev)
 	u32 status, addr;
 	const char *event_name;
 
+	// pr_info("evergreen irq %i %i\n", rdev->ih.enabled, rdev->shutdown);
+
+#if 0
 	if (!rdev->ih.enabled || rdev->shutdown)
 		return IRQ_NONE;
+#endif
 
 	wptr = evergreen_get_ih_wptr(rdev);
 
 restart_ih:
 	/* is somebody else already processing irqs? */
-	if (atomic_xchg(&rdev->ih.lock, 1))
+	if (atomic_xchg(&rdev->ih.lock, 1)) {
+// pr_info("  none\n");
 		return IRQ_NONE;
+	}
 
 	rptr = rdev->ih.rptr;
-	DRM_DEBUG("evergreen_irq_process start: rptr %d, wptr %d\n", rptr, wptr);
+	// pr_info("evergreen_irq_process start: rptr %d, wptr %d\n", rptr, wptr);
 
 	/* Order reading of wptr vs. reading of IH ring data */
 	rmb();
@@ -4769,7 +4805,7 @@ restart_ih:
 				mask = LB_D1_VLINE_INTERRUPT;
 				event_name = "vline";
 			} else {
-				DRM_DEBUG("Unhandled interrupt: %d %d\n",
+				pr_info("Unhandled interrupt: %d %d\n",
 					  src_id, src_data);
 				break;
 			}
@@ -4903,7 +4939,7 @@ restart_ih:
 			}
 			break;
 		default:
-			DRM_DEBUG("Unhandled interrupt: %d %d\n", src_id, src_data);
+			pr_info("Unhandled interrupt: %d %d\n", src_id, src_data);
 			break;
 		}
 
@@ -5299,25 +5335,44 @@ int evergreen_init(struct radeon_device *rdev)
 
 void evergreen_fini(struct radeon_device *rdev)
 {
+pr_info("AA1\n");
 	radeon_pm_fini(rdev);
+	pr_info("AA2\n");
 	radeon_audio_fini(rdev);
+	pr_info("AA3\n");
 	r700_cp_fini(rdev);
+	pr_info("AA4\n");
 	r600_dma_fini(rdev);
+	pr_info("AA5\n");
 	r600_irq_fini(rdev);
+	pr_info("AA6\n");
 	if (rdev->flags & RADEON_IS_IGP)
 		sumo_rlc_fini(rdev);
+	pr_info("AA7\n");
 	radeon_wb_fini(rdev);
+	pr_info("AA8\n");
 	radeon_ib_pool_fini(rdev);
+	pr_info("AA9\n");
 	radeon_irq_kms_fini(rdev);
+	pr_info("AA10\n");
 	uvd_v1_0_fini(rdev);
+	pr_info("AA11\n");
 	radeon_uvd_fini(rdev);
+	pr_info("AA12\n");
 	evergreen_pcie_gart_fini(rdev);
+	pr_info("AA13\n");
 	r600_vram_scratch_fini(rdev);
+	pr_info("AA14\n");
 	radeon_gem_fini(rdev);
+	pr_info("AA15\n");
 	radeon_fence_driver_fini(rdev);
+	pr_info("AA16\n");
 	radeon_agp_fini(rdev);
+	pr_info("AA17\n");
 	radeon_bo_fini(rdev);
+	pr_info("AA18\n");
 	radeon_atombios_fini(rdev);
+	pr_info("AA19\n");
 	kfree(rdev->bios);
 	rdev->bios = NULL;
 }

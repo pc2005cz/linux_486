@@ -21,8 +21,10 @@
 #include <asm/setup.h>
 #include <asm/irqdomain.h>
 
-unsigned int pci_probe = PCI_PROBE_BIOS | PCI_PROBE_CONF1 | PCI_PROBE_CONF2 |
-				PCI_PROBE_MMCONF;
+// unsigned int pci_probe = PCI_PROBE_BIOS | PCI_PROBE_CONF1 | PCI_PROBE_CONF2 |
+				// PCI_PROBE_MMCONF;
+
+unsigned int pci_probe = PCI_PROBE_BIOS | PCI_PROBE_CONF1 ;
 
 static int pci_bf_sort;
 int pci_routeirq;
@@ -515,6 +517,9 @@ int __init pcibios_init(void)
 
 char *__init pcibios_setup(char *str)
 {
+// pr_info("pcibios_setup set flags\n");
+
+
 	if (!strcmp(str, "off")) {
 		pci_probe = 0;
 		return NULL;

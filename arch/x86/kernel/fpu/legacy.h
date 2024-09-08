@@ -102,6 +102,8 @@ static inline int frstor_from_user_sigframe(struct fregs_state __user *fx)
 
 static inline void fxsave(struct fxregs_state *fx)
 {
+//	printk(KERN_DEFAULT "fxsave\n");
+
 	if (IS_ENABLED(CONFIG_X86_32))
 		asm volatile( "fxsave %[fx]" : [fx] "=m" (*fx));
 	else

@@ -209,12 +209,14 @@ static int compare_st_st(int nr)
 	int f, c;
 	FPU_REG *st_ptr;
 
+	#if 1
 	if (!NOT_EMPTY(0) || !NOT_EMPTY(nr)) {
 		setcc(SW_C3 | SW_C2 | SW_C0);
 		/* Stack fault */
 		EXCEPTION(EX_StackUnder);
 		return !(control_word & CW_Invalid);
 	}
+	#endif
 
 	st_ptr = &st(nr);
 	c = compare(st_ptr, FPU_gettagi(nr));
@@ -255,12 +257,25 @@ static int compare_i_st_st(int nr)
 	int f, c;
 	FPU_REG *st_ptr;
 
+	#if 1
 	if (!NOT_EMPTY(0) || !NOT_EMPTY(nr)) {
 		FPU_EFLAGS |= (X86_EFLAGS_ZF | X86_EFLAGS_PF | X86_EFLAGS_CF);
 		/* Stack fault */
 		EXCEPTION(EX_StackUnder);
 		return !(control_word & CW_Invalid);
 	}
+	#endif
+
+	#if 0
+	if (nr == 1) {
+		printk(KERN_DEFAULT "DUMP0 0x%x 0x%x 0x%hx\n",
+			   st(0).sigl, st(0).sigh, st(0).exp
+		);
+		printk(KERN_DEFAULT "    1 0x%x 0x%x 0x%hx\n",
+			   st(1).sigl, st(1).sigh, st(1).exp
+		);
+	}
+	#endif
 
 	partial_status &= ~SW_C0;
 	st_ptr = &st(nr);
@@ -270,6 +285,8 @@ static int compare_i_st_st(int nr)
 		EXCEPTION(EX_Invalid);
 		return !(control_word & CW_Invalid);
 	}
+
+	// printk(KERN_DEFAULT "fcomip 0x%lx\n", c);
 
 	switch (c & 7) {
 	case COMP_A_lt_B:
@@ -283,6 +300,7 @@ static int compare_i_st_st(int nr)
 		break;
 	case COMP_No_Comp:
 		f = X86_EFLAGS_ZF | X86_EFLAGS_PF | X86_EFLAGS_CF;
+		// printk(KERN_DEFAULT "COMP_No_Comp\n");
 		break;
 	default:
 #ifdef PARANOID
@@ -293,6 +311,7 @@ static int compare_i_st_st(int nr)
 	}
 	FPU_EFLAGS = (FPU_EFLAGS & ~(X86_EFLAGS_ZF | X86_EFLAGS_PF | X86_EFLAGS_CF)) | f;
 	if (c & COMP_Denormal) {
+		// printk(KERN_DEFAULT "denormal\n");
 		return denormal_operand() < 0;
 	}
 	return 0;
@@ -303,12 +322,14 @@ static int compare_u_st_st(int nr)
 	int f = 0, c;
 	FPU_REG *st_ptr;
 
+#if 1
 	if (!NOT_EMPTY(0) || !NOT_EMPTY(nr)) {
 		setcc(SW_C3 | SW_C2 | SW_C0);
 		/* Stack fault */
 		EXCEPTION(EX_StackUnder);
 		return !(control_word & CW_Invalid);
 	}
+#endif
 
 	st_ptr = &st(nr);
 	c = compare(st_ptr, FPU_gettagi(nr));
@@ -353,18 +374,40 @@ static int compare_ui_st_st(int nr)
 	int f = 0, c;
 	FPU_REG *st_ptr;
 
+	#if 0
+	printk(KERN_DEFAULT "FUCOMI 0x%lx %i\n", FPU_EFLAGS, nr);
+	for (unsigned idx=0; idx<8; idx++) {
+		printk(KERN_DEFAULT "DUMP%i 0x%x 0x%x 0x%hx\n",
+			idx, st(idx).sigl, st(idx).sigh, st(idx).exp
+		);
+	}
+	#endif
+
+#if 0
+	st(4).sigl = 0;
+	st(4).sigh = 0xc6b85200;
+	st(4).exp = 0x4001;
+#endif
+
+#if 1
 	if (!NOT_EMPTY(0) || !NOT_EMPTY(nr)) {
 		FPU_EFLAGS |= (X86_EFLAGS_ZF | X86_EFLAGS_PF | X86_EFLAGS_CF);
+		printk(KERN_DEFAULT "F1 0x%lx %i\n", FPU_EFLAGS, !NOT_EMPTY(0));
+
 		/* Stack fault */
 		EXCEPTION(EX_StackUnder);
 		return !(control_word & CW_Invalid);
 	}
+#endif
 
 	partial_status &= ~SW_C0;
 	st_ptr = &st(nr);
 	c = compare(st_ptr, FPU_gettagi(nr));
 	if (c & COMP_NaN) {
 		FPU_EFLAGS |= (X86_EFLAGS_ZF | X86_EFLAGS_PF | X86_EFLAGS_CF);
+
+		// printk(KERN_DEFAULT "F2 0x%lx\n", FPU_EFLAGS);
+
 		if (c & COMP_SNaN) {	/* This is the only difference between
 					   un-ordered and ordinary comparisons */
 			EXCEPTION(EX_Invalid);
@@ -379,6 +422,7 @@ static int compare_ui_st_st(int nr)
 		break;
 	case COMP_A_eq_B:
 		f = X86_EFLAGS_ZF;
+		// printk(KERN_DEFAULT "F3 0x%x\n", f);
 		break;
 	case COMP_A_gt_B:
 		f = 0;

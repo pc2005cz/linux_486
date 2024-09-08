@@ -822,9 +822,13 @@ static int i8042_check_aux(void)
  * though it has an AUX port.
  */
 
+pr_info("AUX1\n");
+
 	param = 0x5a;
 	retval = i8042_command(&param, I8042_CMD_AUX_LOOP);
 	if (retval || param != 0x5a) {
+
+pr_info("AUX2 %i %x\n", retval, param);
 
 /*
  * External connection test - filters out AT-soldered PS/2 i8042's
@@ -835,28 +839,36 @@ static int i8042_check_aux(void)
  */
 
 		if (i8042_command(&param, I8042_CMD_AUX_TEST) ||
-		    (param && param != 0xfa && param != 0xff))
+		    (param && param != 0xfa && param != 0xff)) {
+pr_info("AUX3 %x\n", param);
 			return -1;
+			}
 
 /*
  * If AUX_LOOP completed without error but returned unexpected data
  * mark it as broken
  */
-		if (!retval)
+pr_info("AUX4 %i\n", retval);
+		if (!retval) 
 			aux_loop_broken = true;
 	}
 
 /*
  * Bit assignment test - filters out PS/2 i8042's in AT mode
  */
+pr_info("AUX5\n");
 
 	if (i8042_toggle_aux(false)) {
 		pr_warn("Failed to disable AUX port, but continuing anyway... Is this a SiS?\n");
 		pr_warn("If AUX port is really absent please use the 'i8042.noaux' option\n");
 	}
 
-	if (i8042_toggle_aux(true))
+pr_info("AUX6\n");
+
+	if (i8042_toggle_aux(true)) {
+pr_info("AUX7\n");
 		return -1;
+		}
 
 /*
  * Reset keyboard (needed on some laptops to successfully detect
@@ -872,24 +884,31 @@ static int i8042_check_aux(void)
  * Test AUX IRQ delivery to make sure BIOS did not grab the IRQ and
  * used it for a PCI card or somethig else.
  */
+pr_info("AUX8\n");
 
 	if (i8042_noloop || i8042_bypass_aux_irq_test || aux_loop_broken) {
 /*
  * Without LOOP command we can't test AUX IRQ delivery. Assume the port
  * is working and hope we are right.
  */
+pr_info("AUX9\n");
+ 
 		retval = 0;
 		goto out;
 	}
 
 	if (request_irq(I8042_AUX_IRQ, i8042_aux_test_irq, IRQF_SHARED,
-			"i8042", i8042_platform_device))
+			"i8042", i8042_platform_device)) {
+pr_info("AUX10\n");
 		goto out;
+		}
 
 	irq_registered = true;
 
-	if (i8042_enable_aux_port())
+	if (i8042_enable_aux_port()) {
+pr_info("AUX11\n");
 		goto out;
+		}
 
 	spin_lock_irqsave(&i8042_lock, flags);
 
@@ -901,8 +920,10 @@ static int i8042_check_aux(void)
 
 	spin_unlock_irqrestore(&i8042_lock, flags);
 
-	if (retval)
+	if (retval) {
+pr_info("AUX12\n");
 		goto out;
+		}
 
 	if (wait_for_completion_timeout(&i8042_aux_irq_delivered,
 					msecs_to_jiffies(250)) == 0) {
@@ -924,11 +945,17 @@ static int i8042_check_aux(void)
 	i8042_ctr |= I8042_CTR_AUXDIS;
 	i8042_ctr &= ~I8042_CTR_AUXINT;
 
+pr_info("AUX13\n");
+
 	if (i8042_command(&i8042_ctr, I8042_CMD_CTL_WCTR))
 		retval = -1;
 
+pr_info("AUX14\n");
+
 	if (irq_registered)
 		free_irq(I8042_AUX_IRQ, i8042_platform_device);
+
+pr_info("AUX15\n");
 
 	return retval;
 }
@@ -1452,6 +1479,8 @@ static int i8042_setup_aux(void)
 	int (*aux_enable)(void);
 	int error;
 	int i;
+
+	pr_info("aux test\n");
 
 	if (i8042_check_aux())
 		return -ENODEV;

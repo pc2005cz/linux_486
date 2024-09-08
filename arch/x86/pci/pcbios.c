@@ -239,7 +239,7 @@ static int pci_bios_write(unsigned int seg, unsigned int bus,
 	u16 number = 0;
 
 	WARN_ON(seg);
-	if ((bus > 255) || (devfn > 255) || (reg > 255)) 
+	if ((bus > 255) || (devfn > 255) || (reg > 255))
 		return -EINVAL;
 
 	raw_spin_lock_irqsave(&pci_config_lock, flags);
@@ -298,6 +298,8 @@ static const struct pci_raw_ops *__init pci_find_bios(void)
 	 * 0xe0000 through 0xfffff for a valid BIOS32 structure.
 	 */
 
+	pr_info("PCI: find bios\n");
+
 	for (check = (union bios32 *) __va(0xe0000);
 	     check <= (union bios32 *) __va(0xffff0);
 	     ++check) {
@@ -320,19 +322,23 @@ static const struct pci_raw_ops *__init pci_find_bios(void)
 				check->fields.revision, check);
 			continue;
 		}
-		DBG("PCI: BIOS32 Service Directory structure at 0x%p\n", check);
+		pr_info("PCI: BIOS32 Service Directory structure at 0x%p\n", check);
 		if (check->fields.entry >= 0x100000) {
 			printk("PCI: BIOS32 entry (0x%p) in high memory, "
 					"cannot use.\n", check);
 			return NULL;
 		} else {
 			unsigned long bios32_entry = check->fields.entry;
-			DBG("PCI: BIOS32 Service Directory entry at 0x%lx\n",
+			pr_info("PCI: BIOS32 Service Directory entry at 0x%lx\n",
 					bios32_entry);
 			bios32_indirect.address = bios32_entry + PAGE_OFFSET;
 			set_bios_x();
-			if (check_pcibios())
+			if (check_pcibios()) {
+
+				pr_info(" ... found\n");
+
 				return &pci_bios_access;
+			}
 		}
 		break;	/* Hopefully more than one BIOS32 cannot happen... */
 	}
@@ -357,6 +363,8 @@ struct irq_routing_table * pcibios_get_irq_routing_table(void)
 	int ret, map;
 	unsigned long page;
 
+	pr_info("PCI: pci_bios_present %i\n", pci_bios_present);
+
 	if (!pci_bios_present)
 		return NULL;
 	page = __get_free_page(GFP_KERNEL);
@@ -366,7 +374,8 @@ struct irq_routing_table * pcibios_get_irq_routing_table(void)
 	opt.size = PAGE_SIZE;
 	opt.segment = __KERNEL_DS;
 
-	DBG("PCI: Fetching IRQ routing table... ");
+	pr_info("PCI: Fetching IRQ routing table...\n");
+
 	__asm__("push %%es\n\t"
 		"push %%ds\n\t"
 		"pop  %%es\n\t"
@@ -384,7 +393,9 @@ struct irq_routing_table * pcibios_get_irq_routing_table(void)
 		  "S" (&pci_indirect),
 		  "m" (opt)
 		: "memory");
-	DBG("OK  ret=%d, size=%d, map=%x\n", ret, opt.size, map);
+
+	pr_info("OK  ret=%d, size=%d, map=%x\n", ret, opt.size, map);
+
 	if (ret & 0xff00)
 		printk(KERN_ERR "PCI: Error %02x when fetching IRQ routing table.\n", (ret >> 8) & 0xff);
 	else if (opt.size) {
@@ -406,6 +417,8 @@ int pcibios_set_irq_routing(struct pci_dev *dev, int pin, int irq)
 {
 	int ret;
 
+	pr_info("PCI: set routing %i %i\n", pin, irq);
+
 	__asm__("lcall *(%%esi); cld\n\t"
 		"jc 1f\n\t"
 		"xor %%ah, %%ah\n"
@@ -421,7 +434,7 @@ EXPORT_SYMBOL(pcibios_set_irq_routing);
 
 void __init pci_pcbios_init(void)
 {
-	if ((pci_probe & PCI_PROBE_BIOS) 
+	if ((pci_probe & PCI_PROBE_BIOS)
 		&& ((raw_pci_ops = pci_find_bios()))) {
 		pci_bios_present = 1;
 	}

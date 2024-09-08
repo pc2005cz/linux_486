@@ -297,6 +297,7 @@ int radeon_scratch_get(struct radeon_device *rdev, uint32_t *reg)
 	for (i = 0; i < rdev->scratch.num_reg; i++) {
 		if (rdev->scratch.free[i]) {
 			rdev->scratch.free[i] = false;
+// asm volatile ("outb %al, $0xed");
 			*reg = rdev->scratch.reg[i];
 			return 0;
 		}
@@ -1470,7 +1471,11 @@ int radeon_device_init(struct radeon_device *rdev,
 	    (rdev->flags & RADEON_IS_MOBILITY)) {
 		mutex_lock(&rdev->pm.mutex);
 		radeon_dpm_disable(rdev);
+
+		pr_info("INIT before DPM call\n");
+
 		radeon_dpm_enable(rdev);
+		pr_info("INIT after DPM call\n");
 		mutex_unlock(&rdev->pm.mutex);
 	}
 
@@ -1513,24 +1518,36 @@ failed:
  */
 void radeon_device_fini(struct radeon_device *rdev)
 {
+
+	//pc2005
 	DRM_INFO("radeon: finishing device.\n");
 	rdev->shutdown = true;
 	/* evict vram memory */
+
+	pr_info("R1 %p\n", rdev);
 	radeon_bo_evict_vram(rdev);
 	radeon_audio_component_fini(rdev);
+	pr_info("R3h %p\n", rdev);
 	radeon_fini(rdev);
+	pr_info("R4\n");
 	if (!pci_is_thunderbolt_attached(rdev->pdev))
 		vga_switcheroo_unregister_client(rdev->pdev);
+	pr_info("R5\n");
 	if (rdev->flags & RADEON_IS_PX)
 		vga_switcheroo_fini_domain_pm_ops(rdev->dev);
+	pr_info("R6\n");
 	vga_client_unregister(rdev->pdev);
+	pr_info("R7\n");
 	if (rdev->rio_mem)
 		pci_iounmap(rdev->pdev, rdev->rio_mem);
+	pr_info("R8\n");
 	rdev->rio_mem = NULL;
 	iounmap(rdev->rmmio);
+	pr_info("R9\n");
 	rdev->rmmio = NULL;
 	if (rdev->family >= CHIP_BONAIRE)
 		radeon_doorbell_fini(rdev);
+	pr_info("R10\n");
 }
 
 

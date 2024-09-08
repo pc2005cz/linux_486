@@ -2328,7 +2328,12 @@ int radeon_asic_init(struct radeon_device *rdev)
 	rdev->has_uvd = false;
 	rdev->has_vce = false;
 
+	//TODO remove support, pc2005
+
+	pr_info("FFFFFFFF FAMILY %u\n", rdev->family);
+
 	switch (rdev->family) {
+#if 0
 	case CHIP_R100:
 	case CHIP_RV100:
 	case CHIP_RS100:
@@ -2409,6 +2414,7 @@ int radeon_asic_init(struct radeon_device *rdev)
 		else
 			rdev->has_uvd = true;
 		break;
+#endif
 	case CHIP_RV770:
 	case CHIP_RV730:
 	case CHIP_RV710:
@@ -2429,6 +2435,7 @@ int radeon_asic_init(struct radeon_device *rdev)
 		rdev->asic = &evergreen_asic;
 		rdev->has_uvd = true;
 		break;
+#if 0
 	case CHIP_PALM:
 	case CHIP_SUMO:
 	case CHIP_SUMO2:
@@ -2691,6 +2698,7 @@ int radeon_asic_init(struct radeon_device *rdev)
 		rdev->has_uvd = true;
 		rdev->has_vce = true;
 		break;
+#endif
 	default:
 		/* FIXME: not supported yet */
 		return -EINVAL;

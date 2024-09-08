@@ -314,6 +314,14 @@ static int ttm_bo_ioremap(struct ttm_buffer_object *bo,
 		resource_size_t res = bo->resource->bus.offset + offset;
 
 		map->bo_kmap_type = ttm_bo_map_iomap;
+
+		//pc2005
+		if (mem->bus.caching != ttm_uncached) {
+			pr_info("!A! mem->bus.caching=%u (c%u wc%u u%u)\n",
+				mem->bus.caching, ttm_cached, ttm_write_combined, ttm_uncached
+			);
+		}
+
 		if (mem->bus.caching == ttm_write_combined)
 			map->virtual = ioremap_wc(res, size);
 #ifdef CONFIG_X86
@@ -471,6 +479,13 @@ int ttm_bo_vmap(struct ttm_buffer_object *bo, struct iosys_map *map)
 	if (mem->bus.is_iomem) {
 		void __iomem *vaddr_iomem;
 
+		//pc2005
+		if (mem->bus.caching != ttm_uncached) {
+			pr_info("!B! mem->bus.caching=%u (c%u wc%u u%u)\n",
+				mem->bus.caching, ttm_cached, ttm_write_combined, ttm_uncached
+			);
+		}
+
 		if (mem->bus.addr)
 			vaddr_iomem = (void __iomem *)mem->bus.addr;
 		else if (mem->bus.caching == ttm_write_combined)
@@ -481,8 +496,11 @@ int ttm_bo_vmap(struct ttm_buffer_object *bo, struct iosys_map *map)
 			vaddr_iomem = ioremap_cache(mem->bus.offset,
 						  bo->base.size);
 #endif
-		else
+		else {
+			pr_info("!X! ioremap %08x\n", mem->bus.offset);
+
 			vaddr_iomem = ioremap(mem->bus.offset, bo->base.size);
+		}
 
 		if (!vaddr_iomem)
 			return -ENOMEM;

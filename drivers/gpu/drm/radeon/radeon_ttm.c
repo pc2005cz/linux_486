@@ -292,13 +292,16 @@ static int radeon_ttm_io_mem_reserve(struct ttm_device *bdev, struct ttm_resourc
 			return -EINVAL;
 		mem->bus.offset += rdev->mc.aper_base;
 		mem->bus.is_iomem = true;
-		mem->bus.caching = ttm_write_combined;
+		// mem->bus.caching = ttm_write_combined;
+		mem->bus.caching = ttm_uncached;	//pc2005
 #ifdef __alpha__
 		/*
 		 * Alpha: use bus.addr to hold the ioremap() return,
 		 * so we can modify bus.base below.
 		 */
-		mem->bus.addr = ioremap_wc(mem->bus.offset, bus_size);
+		//pc2005
+		// mem->bus.addr = ioremap_wc(mem->bus.offset, bus_size);
+		mem->bus.addr = ioremap_uc(mem->bus.offset, bus_size);
 		if (!mem->bus.addr)
 			return -ENOMEM;
 

@@ -251,6 +251,8 @@ int sata_link_debounce(struct ata_link *link, const unsigned long *params,
 	last_jiffies = jiffies;
 
 	while (1) {
+//		pr_info("DEB 0x%08x\n", cur);	//pc2005
+
 		ata_msleep(link->ap, interval);
 		if ((rc = sata_scr_read(link, SCR_STATUS, &cur)))
 			return rc;
@@ -309,6 +311,8 @@ int sata_link_resume(struct ata_link *link, const unsigned long *params,
 	 * cleared.
 	 */
 	do {
+//		pr_info("RSM 0x%08x\n", scontrol);	//pc2005
+
 		scontrol = (scontrol & 0x0f0) | 0x300;
 		if ((rc = sata_scr_write(link, SCR_CONTROL, scontrol)))
 			return rc;
@@ -661,6 +665,9 @@ int ata_qc_complete_multiple(struct ata_port *ap, u64 qc_active)
 	while (done_mask) {
 		struct ata_queued_cmd *qc;
 		unsigned int tag = __ffs64(done_mask);
+
+		// pr_info("CMPL %u\n", tag);	//pc2005
+
 
 		qc = ata_qc_from_tag(ap, tag);
 		if (qc) {

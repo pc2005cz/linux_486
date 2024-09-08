@@ -169,6 +169,13 @@ static int ttm_pool_apply_caching(struct page **first, struct page **last,
 	if (!num_pages)
 		return 0;
 
+	//pc2005
+	if (caching != ttm_uncached) {
+		pr_info("!C! caching=%u (c%u wc%u u%u)\n",
+			caching, ttm_cached, ttm_write_combined, ttm_uncached
+		);
+	}
+
 	switch (caching) {
 	case ttm_cached:
 		break;
@@ -291,6 +298,15 @@ static struct ttm_pool_type *ttm_pool_select_type(struct ttm_pool *pool,
 		return &pool->caching[caching].orders[order];
 
 #ifdef CONFIG_X86
+
+	//pc2005
+	if (caching != ttm_uncached) {
+		pr_info("!D! caching=%u (c%u wc%u u%u)\n",
+			caching, ttm_cached, ttm_write_combined, ttm_uncached
+		);
+	}
+
+
 	switch (caching) {
 	case ttm_write_combined:
 		if (pool->use_dma32)
@@ -475,7 +491,9 @@ int ttm_pool_alloc(struct ttm_pool *pool, struct ttm_tt *tt,
 			} while (p);
 		}
 
-		page_caching = ttm_cached;
+		//pc2005 TODO ?
+		// page_caching = ttm_cached;
+		page_caching = ttm_uncached;
 		while (num_pages >= (1 << order) &&
 		       (p = ttm_pool_alloc_page(pool, gfp_flags, order))) {
 
@@ -517,7 +535,9 @@ error_free_all:
 	num_pages = tt->num_pages - num_pages;
 	caching_divide = caching - tt->pages;
 	ttm_pool_free_range(pool, tt, tt->caching, 0, caching_divide);
-	ttm_pool_free_range(pool, tt, ttm_cached, caching_divide, num_pages);
+	//pc2005 TODO
+	// ttm_pool_free_range(pool, tt, ttm_cached, caching_divide, num_pages);
+	ttm_pool_free_range(pool, tt, ttm_uncached, caching_divide, num_pages);
 
 	return r;
 }

@@ -429,8 +429,12 @@ void drm_put_dev(struct drm_device *dev)
 		return;
 	}
 
+	pr_info("V1\n");
+
 	drm_dev_unregister(dev);
+	pr_info("V2\n");
 	drm_dev_put(dev);
+	pr_info("V3\n");
 }
 EXPORT_SYMBOL(drm_put_dev);
 
@@ -493,10 +497,13 @@ void drm_dev_unplug(struct drm_device *dev)
 	dev->unplugged = true;
 	synchronize_srcu(&drm_unplug_srcu);
 
+	pr_info("UUnplug\n");
+
 	drm_dev_unregister(dev);
 
 	/* Clear all CPU mappings pointing to this device */
 	unmap_mapping_range(dev->anon_inode->i_mapping, 0, 0, 1);
+	pr_info("UUnplug end\n");
 }
 EXPORT_SYMBOL(drm_dev_unplug);
 
@@ -987,16 +994,26 @@ void drm_dev_unregister(struct drm_device *dev)
 	if (drm_core_check_feature(dev, DRIVER_MODESET))
 		drm_modeset_unregister_all(dev);
 
+	pr_info("T1\n");
+
 	if (dev->driver->unload)
 		dev->driver->unload(dev);
 
+	pr_info("T2\n");
+
 	drm_legacy_pci_agp_destroy(dev);
+	pr_info("T3\n");
 	drm_legacy_rmmaps(dev);
+	pr_info("T4\n");
 
 	remove_compat_control_link(dev);
+	pr_info("T5\n");
 	drm_minor_unregister(dev, DRM_MINOR_ACCEL);
+	pr_info("T6\n");
 	drm_minor_unregister(dev, DRM_MINOR_PRIMARY);
+	pr_info("T7\n");
 	drm_minor_unregister(dev, DRM_MINOR_RENDER);
+	pr_info("T8\n");
 }
 EXPORT_SYMBOL(drm_dev_unregister);
 

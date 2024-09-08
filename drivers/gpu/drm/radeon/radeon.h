@@ -2499,19 +2499,47 @@ void r100_mm_wreg_slow(struct radeon_device *rdev, uint32_t reg, uint32_t v);
 static inline uint32_t r100_mm_rreg(struct radeon_device *rdev, uint32_t reg,
 				    bool always_indirect)
 {
+	uint32_t val;
+
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+
+	//pc2005
 	/* The mmio size is 64kb at minimum. Allows the if to be optimized out. */
 	if ((reg < rdev->rmmio_size || reg < RADEON_MIN_MMIO_SIZE) && !always_indirect)
-		return readl(((void __iomem *)rdev->rmmio) + reg);
+		val = readl(((void __iomem *)rdev->rmmio) + reg);
 	else
-		return r100_mm_rreg_slow(rdev, reg);
+		val = r100_mm_rreg_slow(rdev, reg);
+
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+
+	return val;
+
 }
 static inline void r100_mm_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v,
 				bool always_indirect)
 {
+
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+
 	if ((reg < rdev->rmmio_size || reg < RADEON_MIN_MMIO_SIZE) && !always_indirect)
 		writel(v, ((void __iomem *)rdev->rmmio) + reg);
 	else
 		r100_mm_wreg_slow(rdev, reg, v);
+
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+	// asm volatile ("outb %al, $0xed");
+
 }
 
 u32 r100_io_rreg(struct radeon_device *rdev, u32 reg);
@@ -2720,7 +2748,12 @@ static inline void radeon_ring_write(struct radeon_ring *ring, uint32_t v)
 	if (ring->count_dw <= 0)
 		DRM_ERROR("radeon: writing more dwords to the ring than expected!\n");
 
+	// asm volatile ("outb %al, $0xed");
+
 	ring->ring[ring->wptr++] = v;
+
+	// asm volatile ("outb %al, $0xed");
+
 	ring->wptr &= ring->ptr_mask;
 	ring->count_dw--;
 	ring->ring_free_dw--;

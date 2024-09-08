@@ -547,7 +547,8 @@ static int amdgpu_vram_mgr_new(struct ttm_resource_manager *man,
 		vres->base.placement |= TTM_PL_FLAG_CONTIGUOUS;
 
 	if (adev->gmc.xgmi.connected_to_cpu)
-		vres->base.bus.caching = ttm_cached;
+		// vres->base.bus.caching = ttm_cached;	//pc2005
+		vres->base.bus.caching = ttm_uncached;
 	else
 		vres->base.bus.caching = ttm_write_combined;
 

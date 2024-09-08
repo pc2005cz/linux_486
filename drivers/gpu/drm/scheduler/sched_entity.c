@@ -119,6 +119,7 @@ EXPORT_SYMBOL(drm_sched_entity_modify_sched);
 static bool drm_sched_entity_is_idle(struct drm_sched_entity *entity)
 {
 	rmb(); /* for list_empty to work without lock */
+	// rmb(); //NOTICE pc2005 barriers
 
 	if (list_empty(&entity->list) ||
 	    spsc_queue_count(&entity->job_queue) == 0 ||
@@ -433,6 +434,8 @@ struct drm_sched_job *drm_sched_entity_pop_job(struct drm_sched_entity *entity)
 	 * pointer before we dequeue and if we a write barrier here.
 	 */
 	smp_wmb();
+	wmb();	//pc2005 ? lock; addl $0,0(%%esp)
+	// wmb(); //NOTICE pc2005 barriers
 
 	spsc_queue_pop(&entity->job_queue);
 
@@ -472,6 +475,8 @@ void drm_sched_entity_select_rq(struct drm_sched_entity *entity)
 	 * side.
 	 */
 	smp_rmb();
+	rmb();	//lock
+	// rmb();	//NOTICE pc2005 barriers
 
 	fence = entity->last_scheduled;
 

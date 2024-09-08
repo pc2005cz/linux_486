@@ -170,19 +170,35 @@ void radeon_ring_commit(struct radeon_device *rdev, struct radeon_ring *ring,
 	/* If we are emitting the HDP flush via the ring buffer, we need to
 	 * do it before padding.
 	 */
+	// asm volatile ("outb %al, $0xed");
+
 	if (hdp_flush && rdev->asic->ring[ring->idx]->hdp_flush)
 		rdev->asic->ring[ring->idx]->hdp_flush(rdev, ring);
+
+	// asm volatile ("outb %al, $0xed");
+
 	/* We pad to match fetch size */
 	while (ring->wptr & ring->align_mask) {
 		radeon_ring_write(ring, ring->nop);
+		// asm volatile ("outb %al, $0xed");
 	}
+
+	// asm volatile ("outb %al, $0xed");
+
+	// mb();	//NOTICE pc2005 barriers
 	mb();
 	/* If we are emitting the HDP flush via MMIO, we need to do it after
 	 * all CPU writes to VRAM finished.
 	 */
 	if (hdp_flush && rdev->asic->mmio_hdp_flush)
 		rdev->asic->mmio_hdp_flush(rdev);
+
+	// asm volatile ("outb %al, $0xed");
+
 	radeon_ring_set_wptr(rdev, ring);
+
+	// asm volatile ("outb %al, $0xed");
+
 }
 
 /**

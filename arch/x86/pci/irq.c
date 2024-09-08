@@ -87,11 +87,15 @@ static inline struct irq_routing_table *pirq_check_routing_table(u8 *addr,
 	sum = 0;
 	for (i = 0; i < rt->size; i++)
 		sum += addr[i];
+
+	pr_info("Hx routing table!!! ignore nonzero checksum %u\n", sum);
+
 	if (!sum) {
 		DBG(KERN_DEBUG "PCI: Interrupt Routing Table found at 0x%lx\n",
 		    __pa(rt));
 		return rt;
 	}
+
 	return NULL;
 }
 
@@ -174,6 +178,8 @@ static struct irq_routing_table * __init pirq_find_routing_table(void)
 	u8 * const bios_end = (u8 *)__va(0x100000);
 	u8 *addr;
 	struct irq_routing_table *rt;
+
+// pr_info("G1\n");
 
 	if (pirq_table_addr) {
 		rt = pirq_check_routing_table((u8 *)__va(pirq_table_addr),
@@ -356,6 +362,8 @@ static int pirq_finali_get(struct pci_dev *router, struct pci_dev *dev,
 	u8 index;
 	u8 x;
 
+	pr_info("!!!pirq_finali_get pirq=0x%02x\n", pirq);
+
 	index = (pirq & 1) << 1 | (pirq & 8) >> 3;
 	raw_spin_lock_irqsave(&pc_conf_lock, flags);
 	pc_conf_set(PC_CONF_FINALI_LOCK, PC_CONF_FINALI_LOCK_KEY);
@@ -375,6 +383,8 @@ static int pirq_finali_set(struct pci_dev *router, struct pci_dev *dev,
 	unsigned long flags;
 	u8 index;
 
+	pr_info("!!!pirq_finali_set pirq=0x%02x irq=0x%02x\n", pirq, irq);
+
 	if (!val)
 		return 0;
 
@@ -393,6 +403,8 @@ static int pirq_finali_lvl(struct pci_dev *router, struct pci_dev *dev,
 	u8 mask = ~((pirq & 0xf0u) >> 4);
 	unsigned long flags;
 	u8 trig;
+
+	pr_info("!!!pirq_finali_lvl pirq=0x%02x irq=0x%02x\n", pirq, irq);
 
 	elcr_set_level_irq(irq);
 	raw_spin_lock_irqsave(&pc_conf_lock, flags);
@@ -577,6 +589,8 @@ static int pirq_ib_set(struct pci_dev *router, struct pci_dev *dev, int pirq,
 {
 	int reg;
 
+	pr_info("!!!pirq_ib_set pirq=0x%02x irq=0x%02x\n", pirq, irq);
+
 	reg = pirq;
 	if (reg >= 1 && reg <= 2)
 		reg += PCI_I82426EX_PIRQ_ROUTE_CONTROL - 1;
@@ -726,11 +740,17 @@ static int pirq_sis497_get(struct pci_dev *router, struct pci_dev *dev,
 	int reg;
 	u8 x;
 
+	//pc2005
+	pr_info("pirq_sis497_get pirq=0x%02x\n", pirq);
+
 	reg = pirq;
 	if (reg >= 1 && reg <= 4)
 		reg += PCI_SIS497_INTA_TO_IRQ_LINK - 1;
 
 	pci_read_config_byte(router, reg, &x);
+
+	pr_info("	0x%02x\n", x);
+
 	return (x & PIRQ_SIS497_IRQ_ENABLE) ? (x & PIRQ_SIS497_IRQ_MASK) : 0;
 }
 
@@ -739,6 +759,8 @@ static int pirq_sis497_set(struct pci_dev *router, struct pci_dev *dev,
 {
 	int reg;
 	u8 x;
+
+	pr_info("pirq_sis497_set pirq=0x%02x irq=%i\n", pirq, irq);
 
 	reg = pirq;
 	if (reg >= 1 && reg <= 4)
@@ -950,6 +972,107 @@ static int pirq_pico_set(struct pci_dev *router, struct pci_dev *dev, int pirq,
 	return 1;
 }
 
+
+
+
+/*
+ *	PIRQ routing for UMC um8886 isa bridge
+ *
+ * 43.F0  INTA target IRQ
+ * 43.0F  INTB target IRQ
+ * 44.F0  INTC target IRQ
+ * 44.0F  INTD target IRQ
+ *
+ */
+
+#define PCI_SIS497_INTA_TO_IRQ_LINK	0xc0u
+
+#define PIRQ_SIS497_IRQ_MASK		0x0fu
+#define PIRQ_SIS497_IRQ_ENABLE		0x80u
+
+static int pirq_um8886_get(struct pci_dev *router, struct pci_dev *dev,
+						   int pirq)
+{
+	int reg;
+	u8 x;
+
+	//pc2005
+	pr_info("pirq_um8886_get id:%u\n", pirq);
+
+	/*
+	 * pirq values
+	 * 0 unimplemented
+	 * 1 chipset register for INTA
+	 * 2 chipset register for INTB
+	 * 3 chipset register for INTC
+	 * 4 chipset register for INTD
+	 *
+	 */
+
+	switch (pirq) {
+		case 1:	//A, high nibble
+		case 2:	//B, low nibble
+			reg = 0x43;
+			break;
+		case 3:	//C, high nibble
+		case 4:	//D, low nibble
+			reg = 0x44;
+			break;
+		case 0:	//unimplented
+			pr_err("Unimplemented pirq ID\n");
+			return 0;
+		default:
+			pr_err("Unknown pirq ID %u\n", pirq);
+			return 0;
+	}
+
+	pci_read_config_byte(router, reg, &x);
+
+	pr_info("	0x%02x\n", x);
+
+	return ((pirq-1) & 1) ? (x & 0xf) : (x & 0xf0) >> 4;
+}
+
+static int pirq_um8886_set(struct pci_dev *router, struct pci_dev *dev,
+						   int pirq, int irq)
+{
+	int reg;
+	u8 x;
+
+	pr_info("pirq_um8886_set id:%u irq:%i\n", pirq, irq);
+
+	switch (pirq) {
+		case 1:	//A, high nibble
+		case 2:	//B, low nibble
+			reg = 0x43;
+			break;
+		case 3:	//C, high nibble
+		case 4:	//D, low nibble
+			reg = 0x44;
+			break;
+		case 0:	//unimplented
+			pr_err("Unimplemented pirq\n");
+			return 0;
+		default:
+			pr_err("Unknown pirq ID %u\n", pirq);
+			return 0;
+	}
+
+	pci_read_config_byte(router, reg, &x);
+
+	if ((pirq-1) & 1) {
+		//B, D (low nibble)
+		x = (x & 0xf0) | (irq & 0xf);
+	} else {
+		//A, C (high nibble)
+		x = ((irq & 0xf) << 4) | (x & 0xf);
+	}
+	pci_write_config_byte(router, reg, x);
+
+	return 1;
+}
+
+
 #ifdef CONFIG_PCI_BIOS
 
 static int pirq_bios_set(struct pci_dev *router, struct pci_dev *dev, int pirq, int irq)
@@ -1031,9 +1154,9 @@ static __init int intel_router_probe(struct irq_router *r, struct pci_dev *route
 		return 1;
 	}
 
-	if ((device >= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MIN && 
-	     device <= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MAX) 
-	||  (device >= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN && 
+	if ((device >= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MIN &&
+	     device <= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MAX)
+	||  (device >= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN &&
 	     device <= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX)
 	||  (device >= PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MIN &&
 	     device <= PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MAX)
@@ -1132,6 +1255,8 @@ static __init int serverworks_router_probe(struct irq_router *r,
 
 static __init int sis_router_probe(struct irq_router *r, struct pci_dev *router, u16 device)
 {
+pr_info("SIS router probe\n");
+
 	switch (device) {
 	case PCI_DEVICE_ID_SI_496:
 		r->name = "SiS85C497";
@@ -1240,6 +1365,21 @@ static __init int pico_router_probe(struct irq_router *r, struct pci_dev *router
 	return 0;
 }
 
+
+static __init int umc_router_probe(struct irq_router *r, struct pci_dev *router, u16 device)
+{
+	pr_info("UMC router probe\n");
+
+	switch (device) {
+		case PCI_DEVICE_ID_UMC_UM8886A:
+			r->name = "UM8886";
+			r->get = pirq_um8886_get;
+			r->set = pirq_um8886_set;
+			return 1;
+	}
+	return 0;
+}
+
 static __initdata struct irq_router_handler pirq_routers[] = {
 	{ PCI_VENDOR_ID_INTEL, intel_router_probe },
 	{ PCI_VENDOR_ID_AL, ali_router_probe },
@@ -1252,6 +1392,7 @@ static __initdata struct irq_router_handler pirq_routers[] = {
 	{ PCI_VENDOR_ID_SERVERWORKS, serverworks_router_probe },
 	{ PCI_VENDOR_ID_AMD, amd_router_probe },
 	{ PCI_VENDOR_ID_PICOPOWER, pico_router_probe },
+	{ PCI_VENDOR_ID_UMC, umc_router_probe },
 	/* Someone with docs needs to add the ATI Radeon IGP */
 	{ 0, NULL }
 };
@@ -1273,7 +1414,11 @@ static bool __init pirq_try_router(struct irq_router *r,
 	DBG(KERN_DEBUG "PCI: Trying IRQ router for [%04x:%04x]\n",
 	    dev->vendor, dev->device);
 
+pr_info("F1 pirq_try_router (probe for sis)\n");
+//force fake pirq in here? TODO
+
 	for (h = pirq_routers; h->vendor; h++) {
+// pr_info("F2\n");
 		/* First look for a router match */
 		if (rt->rtr_vendor == h->vendor &&
 		    h->probe(r, dev, rt->rtr_device))
@@ -1283,6 +1428,7 @@ static bool __init pirq_try_router(struct irq_router *r,
 		    h->probe(r, dev, dev->device))
 			return true;
 	}
+// pr_info("F3\n");
 	return false;
 }
 
@@ -1290,6 +1436,8 @@ static void __init pirq_find_router(struct irq_router *r)
 {
 	struct irq_routing_table *rt = pirq_table;
 	struct pci_dev *dev;
+
+pr_info("D1 pirq_find_router\n");
 
 #ifdef CONFIG_PCI_BIOS
 	if (!rt->signature) {
@@ -1305,7 +1453,7 @@ static void __init pirq_find_router(struct irq_router *r)
 	r->get = NULL;
 	r->set = NULL;
 
-	DBG(KERN_DEBUG "PCI: Attempting to find IRQ router for [%04x:%04x]\n",
+	pr_info("PCI: Attempting to find IRQ router for [%04x:%04x]\n",
 	    rt->rtr_vendor, rt->rtr_device);
 
 	/* Use any vendor:device provided by the routing table or try all.  */
@@ -1323,6 +1471,8 @@ static void __init pirq_find_router(struct irq_router *r)
 			}
 		}
 	}
+
+// pr_info("D2\n");
 
 	if (pirq_router_dev)
 		dev_info(&pirq_router_dev->dev, "%s IRQ router [%04x:%04x]\n",
@@ -1402,6 +1552,8 @@ static int pcibios_lookup_irq(struct pci_dev *dev, int assign)
 	struct pci_dev *dev2 = NULL;
 	char *msg = NULL;
 
+pr_info("IQ pcibios_lookup_irq\n");
+
 	/* Find IRQ pin */
 	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &dpin);
 	if (!dpin) {
@@ -1464,8 +1616,12 @@ static int pcibios_lookup_irq(struct pci_dev *dev, int assign)
 			dev_warn(&dev->dev, "IRQ %d doesn't match PIRQ mask "
 				 "%#x; try pci=usepirqmask\n", newirq, mask);
 	}
+
+// pr_info("IQ8\n");
+
 	if (!newirq && assign) {
 		for (i = 0; i < 16; i++) {
+// pr_info("IQ8a %i\n", i);
 			if (!(mask & (1 << i)))
 				continue;
 			if (pirq_penalty[i] < pirq_penalty[newirq] &&
@@ -1477,10 +1633,12 @@ static int pcibios_lookup_irq(struct pci_dev *dev, int assign)
 
 	/* Check if it is hardcoded */
 	if ((pirq & 0xf0) == 0xf0) {
+pr_info("IQ8b hardcoded pirq\n");
 		irq = pirq & 0xf;
 		msg = "hardcoded";
 	} else if (r->get && (irq = r->get(pirq_router_dev, dev, pirq)) && \
 	((!(pci_probe & PCI_USE_PIRQ_MASK)) || ((1 << irq) & mask))) {
+// pr_info("IQ8c\n");
 		msg = "found";
 		if (r->lvl)
 			r->lvl(pirq_router_dev, dev, pirq, irq);
@@ -1488,6 +1646,7 @@ static int pcibios_lookup_irq(struct pci_dev *dev, int assign)
 			elcr_set_level_irq(irq);
 	} else if (newirq && r->set &&
 		(dev->class >> 8) != PCI_CLASS_DISPLAY_VGA) {
+// pr_info("IQ8d\n");
 		if (r->set(pirq_router_dev, dev, pirq, newirq)) {
 			if (r->lvl)
 				r->lvl(pirq_router_dev, dev, pirq, newirq);
@@ -1497,6 +1656,8 @@ static int pcibios_lookup_irq(struct pci_dev *dev, int assign)
 			irq = newirq;
 		}
 	}
+
+// pr_info("C9\n");
 
 	if (!irq) {
 		if (newirq && mask == (1 << newirq)) {
@@ -1512,6 +1673,7 @@ static int pcibios_lookup_irq(struct pci_dev *dev, int assign)
 
 	/* Update IRQ for all devices with the same pirq value */
 	for_each_pci_dev(dev2) {
+// pr_info("C10\n");
 		pci_read_config_byte(dev2, PCI_INTERRUPT_PIN, &dpin);
 		if (!dpin)
 			continue;
@@ -1550,8 +1712,11 @@ void __init pcibios_fixup_irqs(void)
 	struct pci_dev *dev = NULL;
 	u8 pin;
 
+pr_info("FX pcibios_fixup_irqs\n");
+
 	DBG(KERN_DEBUG "PCI: IRQ fixup\n");
 	for_each_pci_dev(dev) {
+// pr_info("FX2\n");
 		/*
 		 * If the BIOS has set an out of range IRQ number, just
 		 * ignore it.  Also keep track of which IRQ's are
@@ -1561,6 +1726,9 @@ void __init pcibios_fixup_irqs(void)
 			dev_dbg(&dev->dev, "ignoring bogus IRQ %d\n", dev->irq);
 			dev->irq = 0;
 		}
+
+// pr_info("FX3\n");
+
 		/*
 		 * If the IRQ is already assigned to a PCI device,
 		 * ignore its ISA use penalty
@@ -1577,14 +1745,20 @@ void __init pcibios_fixup_irqs(void)
 	dev = NULL;
 	for_each_pci_dev(dev) {
 		pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+
+		pr_info("FX PIN = %u\n", pin);
+
 		if (!pin)
 			continue;
+
+// pr_info("B5\n");
 
 		/*
 		 * Still no IRQ? Try to lookup one...
 		 */
 		if (!dev->irq)
 			pcibios_lookup_irq(dev, 0);
+// pr_info("B6\n");
 	}
 }
 
@@ -1639,6 +1813,141 @@ static const struct dmi_system_id pciirq_dmi_table[] __initconst = {
 	{ }
 };
 
+
+//no UMC pirq router o_O
+//https://elixir.free-electrons.com/linux/v6.3.9/source/arch/x86/pci/irq.c#L1243
+
+/*
+ * 00:04.0 PCI bridge: PLX Technology, Inc. PEX 8111 PCI Express-to-PCI Bridge (rev 21)
+ * 00:10.0 Host bridge: United Microelectronics [UMC] UM8881F (rev 04)
+ * 00:12.0 ISA bridge: United Microelectronics [UMC] UM8886A (rev 0d)
+ * 00:12.1 IDE interface: United Microelectronics [UMC] UM8886BF (rev 0d)
+ *
+ */
+
+#define MY_MAX_SLOT_UMC 3	//+ southbridge?
+static struct irq_routing_table pc2005_fakepirqtable_umc = {
+	PIRQ_SIGNATURE,  /* u32 signature */
+	PIRQ_VERSION,    /* u16 version   */
+	32+16*MY_MAX_SLOT_UMC,	 /* There can be total CONFIG_IRQ_SLOT_COUNT devices on the bus */
+	0x00,		 /* Where the interrupt router lies (bus) */
+	(0x12 << 3)|0x0,				/* Where the interrupt router lies (dev) */
+	0,		 						/* IRQs devoted exclusively to PCI usage */
+	PCI_VENDOR_ID_UMC,				/* Vendor */
+	PCI_DEVICE_ID_UMC_UM8886A,		/* Device */
+	0,		 /* miniport */
+	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /* u8 rfu[11] */
+	0x20,		 /* u8 checksum. */
+	/* clang-format off */
+	{
+		//0xdef8
+		//0x1000
+		/* bus,       dev|fn,   {link, bitmap}, {link, bitmap}, {link, bitmap}, {link, bitmap},  slot, rfu */
+		{0x00,(0x3 << 3)|0x0, {{1, 0xdef8}, {2, 0xdef8}, {3, 0xdef8}, {4, 0xdef8}}, 0x1, 0x0}, /* nejbliz ISA */
+		{0x00,(0x4 << 3)|0x0, {{2, 0xdef8}, {3, 0xdef8}, {4, 0xdef8}, {1, 0xdef8}}, 0x2, 0x0}, /* stredni */
+		{0x00,(0x5 << 3)|0x0, {{3, 0xdef8}, {4, 0xdef8}, {1, 0xdef8}, {2, 0xdef8}}, 0x3, 0x0}, /* nejbliz RAM */
+	}
+	/* clang-format on */
+};
+
+
+
+//https://elixir.free-electrons.com/linux/v6.3.9/source/arch/x86/pci/irq.c#L575
+//page 61
+/*
+====================
+working
+	{0x00,(0x0b << 3)|0x0, {{1, 0xdef8}, {1, 0xdef8}, {2, 0xdef8}, {2, 0xdef8}}, 0x1, 0x0}, // nejbliz ISA
+	{0x00,(0x13 << 3)|0x0, {{1, 0xdef8}, {1, 0xdef8}, {2, 0xdef8}, {2, 0xdef8}}, 0x2, 0x0}, // stredni
+	{0x00,(0x11 << 3)|0x0, {{1, 0xdef8}, {1, 0xdef8}, {2, 0xdef8}, {2, 0xdef8}}, 0x3, 0x0}, // nejbliz RAM
+ */
+#define MY_MAX_SLOT_INTEL 3
+static struct irq_routing_table pc2005_fakepirqtable_intel = {
+	PIRQ_SIGNATURE,  /* u32 signature */
+	PIRQ_VERSION,    /* u16 version   */
+	32+16*MY_MAX_SLOT_INTEL,	 /* There can be total CONFIG_IRQ_SLOT_COUNT devices on the bus */
+	0x00,		 /* Where the interrupt router lies (bus) */
+	(0x5 << 3)|0x0,   /* Where the interrupt router lies (dev) */
+	0,		 /* IRQs devoted exclusively to PCI usage */
+	PCI_VENDOR_ID_INTEL,	 /* Vendor */
+	PCI_DEVICE_ID_INTEL_82425,	 /* Device */
+	0,		 /* miniport */
+	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /* u8 rfu[11] */
+	0x42,		 /* u8 checksum. */
+	/* clang-format off */
+	{
+		//0xdef8
+		//0x1000
+		/* bus,       dev|fn,   {link, bitmap}, {link, bitmap}, {link, bitmap}, {link, bitmap},  slot, rfu */
+		{0x00,(0x0b << 3)|0x0, {{2, 0xdef8}, {1, 0xdef8}, {2, 0xdef8}, {1, 0xdef8}}, 0x1, 0x0}, /* slot 3 nejbliz ISA */
+		{0x00,(0x13 << 3)|0x0, {{2, 0xdef8}, {1, 0xdef8}, {2, 0xdef8}, {1, 0xdef8}}, 0x2, 0x0}, /* slot 2 stredni */
+		{0x00,(0x11 << 3)|0x0, {{1, 0xdef8}, {2, 0xdef8}, {1, 0xdef8}, {2, 0xdef8}}, 0x3, 0x0}, /* slot 1 nejbliz RAM */
+	}
+	/* clang-format on */
+};
+
+
+//https://elixir.free-electrons.com/linux/v6.3.9/source/arch/x86/pci/irq.c#L737
+#define MY_MAX_SLOT_SIS 3
+static struct irq_routing_table pc2005_fakepirqtable_sis = {
+	PIRQ_SIGNATURE,  /* u32 signature */
+	PIRQ_VERSION,    /* u16 version   */
+	32+16*MY_MAX_SLOT_SIS,	 /* There can be total CONFIG_IRQ_SLOT_COUNT devices on the bus */
+	0x00,		 /* Where the interrupt router lies (bus) */
+	(0x5 << 3)|0x0,   /* Where the interrupt router lies (dev) */
+	0,		 /* IRQs devoted exclusively to PCI usage */
+	PCI_VENDOR_ID_SI,	 /* Vendor */
+	PCI_DEVICE_ID_SI_496,	 /* Device */
+	0,		 /* miniport */
+	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /* u8 rfu[11] */
+	0x42,		 /* u8 checksum. */
+	/* clang-format off */
+	{
+//0xdef8
+//0x1000
+		/* bus,       dev|fn,   {link, bitmap}, {link, bitmap}, {link, bitmap}, {link, bitmap},  slot, rfu */
+		{0x00,(0x0b << 3)|0x0, {{0xc0, 0xdef8}, {0xc1, 0xdef8}, {0xc2, 0xdef8}, {0xc3, 0xdef8}}, 0x1, 0x0}, /* nejbliz cpu */
+		{0x00,(0x0d << 3)|0x0, {{0xc1, 0xdef8}, {0xc2, 0xdef8}, {0xc3, 0xdef8}, {0xc0, 0xdef8}}, 0x2, 0x0}, /* stredni */
+		{0x00,(0x0f << 3)|0x0, {{0xc2, 0xdef8}, {0xc3, 0xdef8}, {0xc0, 0xdef8}, {0xc1, 0xdef8}}, 0x3, 0x0}, /* nejbliz ISA */
+	}
+	/* clang-format on */
+};
+
+//https://elixir.free-electrons.com/linux/v6.3.9/source/arch/x86/pci/irq.c#L368
+#define MY_MAX_SLOT_ALI	3	//technicky 4
+#define INTJ0	(0x10U | 0 | 0)	//INT A/1?
+#define INTJ1	(0x20U | 8 | 0)	//INT B/2?
+#define INTJ2	(0x40U | 0 | 1)	//INT C/3?
+#define INTJ3	(0x80U | 8 | 1)	//INT D/4?
+//NOTICE 0xf0 will mean "hardcoded" IRQ
+
+//page 76 of ali datasheet
+static struct irq_routing_table pc2005_fakepirqtable_ali = {
+	PIRQ_SIGNATURE,  /* u32 signature */
+	PIRQ_VERSION,    /* u16 version   */
+	32+16*MY_MAX_SLOT_ALI,	 /* There can be total CONFIG_IRQ_SLOT_COUNT devices on the bus */
+	0x00,		 /* Where the interrupt router lies (bus) */
+	(0x0 << 3)|0x0,   /* Where the interrupt router lies (dev) */
+	0,		 /* IRQs devoted exclusively to PCI usage */
+	PCI_VENDOR_ID_AL,	 /* Vendor */
+	PCI_DEVICE_ID_AL_M1489,	 /* Device */
+	0,		 /* miniport */
+	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /* u8 rfu[11] */
+	0x42,		 /* u8 checksum. */
+	/* clang-format off */
+	{
+		//0xdef8
+		//0x1000
+		/* bus,       dev|fn,   {link, bitmap}, {link, bitmap}, {link, bitmap}, {link, bitmap},  slot, rfu */
+		{0x00,(0x03 << 3)|0x0, {{INTJ0, 0xdef8}, {INTJ1, 0xdef8}, {INTJ2, 0xdef8}, {INTJ3, 0xdef8}}, 0x1, 0x0}, /* cpu */
+		{0x00,(0x04 << 3)|0x0, {{INTJ1, 0xdef8}, {INTJ2, 0xdef8}, {INTJ3, 0xdef8}, {INTJ0, 0xdef8}}, 0x2, 0x0}, /* middle */
+		{0x00,(0x05 << 3)|0x0, {{INTJ2, 0xdef8}, {INTJ3, 0xdef8}, {INTJ0, 0xdef8}, {INTJ1, 0xdef8}}, 0x3, 0x0}, /* PISA */
+		//PISA tree
+	}
+	/* clang-format on */
+};
+
+
 void __init pcibios_irq_init(void)
 {
 	struct irq_routing_table *rtable = NULL;
@@ -1651,13 +1960,75 @@ void __init pcibios_irq_init(void)
 	dmi_check_system(pciirq_dmi_table);
 
 	pirq_table = pirq_find_routing_table();
+pr_info("PIRQ pirq_find_routing_table @ 0x%px\n", pirq_table);
 
 #ifdef CONFIG_PCI_BIOS
 	if (!pirq_table && (pci_probe & PCI_BIOS_IRQ_SCAN)) {
 		pirq_table = pcibios_get_irq_routing_table();
 		rtable = pirq_table;
+pr_info("PIRQ pcibios_get @ 0x%p\n", pirq_table);
 	}
 #endif
+
+	if (!pirq_table) {
+		//TODO maybe on pb4 CONFIG_PCI_BIOS test
+		pr_info("PIRQ table not found, look for predefined\n");
+		// pirq_table = &pc2005_fakepirqtable_ali;
+		// pirq_table = &pc2005_fakepirqtable_sis;
+		// pirq_table = &pc2005_fakepirqtable_intel;
+		// pirq_table = &pc2005_fakepirqtable_umc;
+
+		if (pci_get_subsys(
+			PCI_VENDOR_ID_UMC,
+			PCI_DEVICE_ID_UMC_UM8886A,
+			PCI_ANY_ID,
+			PCI_ANY_ID,
+			NULL)
+		) {
+#if 1
+			pr_info("Found UMC8881/6\n");
+			pirq_table = &pc2005_fakepirqtable_umc;
+#endif
+		} else if (pci_get_subsys(
+			PCI_VENDOR_ID_AL,
+			PCI_DEVICE_ID_AL_M1489,
+			PCI_ANY_ID,
+			PCI_ANY_ID,
+			NULL)
+		) {
+#if 1
+			pr_info("Found FinALI\n");
+			pirq_table = &pc2005_fakepirqtable_ali;
+#endif
+		} else if (pci_get_subsys(
+			PCI_VENDOR_ID_SI,
+			PCI_DEVICE_ID_SI_496,
+			PCI_ANY_ID,
+			PCI_ANY_ID,
+			NULL)
+		) {
+#if 1
+			pr_info("Found SiS 496/7\n");
+			pirq_table = &pc2005_fakepirqtable_sis;
+#endif
+		} else if (pci_get_subsys(
+			PCI_VENDOR_ID_INTEL,
+			PCI_DEVICE_ID_INTEL_82425,
+			PCI_ANY_ID,
+			PCI_ANY_ID,
+			NULL)
+		) {
+#if 1
+			pr_info("Found i82425\n");
+			pirq_table = &pc2005_fakepirqtable_intel;
+#endif
+		}
+
+		if (!pirq_table) {
+			pr_warn("MB don't match any predefined PIRQ table\n");
+		}
+	}
+
 	if (pirq_table) {
 		pirq_peer_trick();
 		pirq_find_router(&pirq_router);
@@ -1672,7 +2043,7 @@ void __init pcibios_irq_init(void)
 		 * routing table
 		 */
 		if (io_apic_assign_pci_irqs) {
-			kfree(rtable);
+			// kfree(rtable);
 			pirq_table = NULL;
 		}
 	}
